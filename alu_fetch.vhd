@@ -99,7 +99,7 @@ signal C,Z: std_logic;
 type global_state_type is (reset_pc,fetch,fetch1,fetch2,fetch3,end_fetch,decode,end_decode, execute,end_execute); 
 signal global_state: global_state_type;
 
-type instruction_type is (i_addi,i_load,i_jump,i_display,i_displayi,i_halt,i_null,i_nop,i_bnz,i_dec);
+type instruction_type is (i_nop,i_load,i_addi,i_dply,i_adec,i_bnz,i_bz,i_bs,i_bnc,i_bc,i_bnv,i_bv,i_halt,i_add,i_sub,i_mult,i_div,i_multi,i_divi,i_comp1,i_comp2,i_jmp,i_jalr);
 signal instruction: instruction_type;
 
 type execute_instruction_type is(t0,t1,t2,t3,t4);
@@ -151,15 +151,30 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 					global_state<=decode;
 				when decode =>
 					case IR(23 downto 18) is
-						when "001001" =>instruction <= i_addi;
-						when "010001" =>instruction <= i_load;
-						when "010111" =>instruction <= i_jump;
-						when "011000" =>instruction <= i_display;
-						when "011001" =>instruction <= i_displayi;
-						when "010011" =>instruction <= i_halt;
-						when "010100" =>instruction <= i_bnz;
-						when "010110" =>instruction <= i_nop;
-						when "000100" =>instruction <= i_dec;
+						when "000000" =>instruction <= i_nop;
+						when "000001" =>instruction <= i_load;
+						when "000010" =>instruction <= i_addi;
+						when "000011" =>instruction <= i_dply;
+						when "000100" =>instruction <= i_adec;
+						when "000101" =>instruction <= i_bnz;
+						when "000110" =>instruction <= i_bz;
+						when "000111" =>instruction <= i_bs;
+						when "001000" =>instruction <= i_bnc;
+						when "001001" =>instruction <= i_bc;
+						when "001010" =>instruction <= i_bnv;
+						when "001011" =>instruction <= i_bv;
+						when "001100" =>instruction <= i_halt;
+						when "001101" =>instruction <= i_add;
+						when "001110" =>instruction <= i_sub;
+						when "011111" =>instruction <= i_mult;
+						when "010000" =>instruction <= i_div;
+						when "010001" =>instruction <= i_multi;
+						when "010010" =>instruction <= i_divi;
+						when "010011" =>instruction <= i_comp1;
+						when "010100" =>instruction <= i_comp2;
+						when "010101" =>instruction <= i_jmp;
+						when "010110" =>instruction <= i_jalr;	
+						
 						when others =>
 							instruction <= i_null;
 					end case;
@@ -212,7 +227,7 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 									execute_instruction<=t0;
 									global_state<=end_execute;
 							end case;
-						when i_display=>
+						when i_dply=>
 							case execute_instruction is
 								when t0 =>
 									execute_instruction<=t1;
@@ -229,9 +244,6 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 									execute_instruction<=t0;
 									global_state<=end_execute;
 							end case;
-						when i_displayi=>
-							Rdisplay<=IR(13 downto 0);
-							global_state<=end_execute;
 						when i_halt =>
 							PC<=PC-1;
 							global_state<=end_execute;
@@ -240,7 +252,7 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 							global_state<=end_execute;
 						when i_nop =>
 							global_state<=end_execute;
-						when i_dec =>
+						when i_adec =>
 							case execute_instruction is
 								when t0 =>
 									execute_instruction<=t1;
@@ -266,11 +278,7 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 							end case;
 						when i_bnz =>
 							if(Z = '0') then
-								if(IR(17) = '0') then
-									PC<=PC+IR(7 downto 0);
-								else
-									PC<=PC-IR(7 downto 0);
-								end if;
+								PC<=PC+IR(7 downto 0);
 								global_state<=end_execute;
 							else
 								global_state<=end_execute;
