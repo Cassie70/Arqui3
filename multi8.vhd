@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 
 entity multi8 is port(
         A, B: in std_logic_vector(7 downto 0);
-        result: out std_logic_vector(7 downto 0)
+        result: out std_logic_vector(15 downto 0)
     );
 end multi8;
 
@@ -19,7 +19,7 @@ architecture a_multi8 of multi8 is
 	end component;
 
     signal v1, v2, v3, v4, v5, v6, v7, v8: std_logic_vector(15 downto 0);
-    signal v12, v34, v56, v12_34, v56_78, v1234_5678: std_logic_vector(15 downto 0);
+    signal v12, v34, v56, v78, v12_34, v56_78, v1234_5678: std_logic_vector(15 downto 0);
 begin
     v1 <= "00000000" & (A(7) and B(0)) & (A(6) and B(0)) & (A(5) and B(0)) & (A(4) and B(0)) & (A(3) and B(0)) & (A(2) and B(0)) & (A(1) and B(0)) & (A(0) and B(0));
     v2 <= "0000000" & (A(7) and B(1)) & (A(6) and B(1)) & (A(5) and B(1)) & (A(4) and B(1)) & (A(3) and B(1)) & (A(2) and B(1)) & (A(1) and B(1)) & (A(0) and B(1)) & "0";
