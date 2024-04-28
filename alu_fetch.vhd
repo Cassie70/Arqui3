@@ -90,6 +90,9 @@ signal data_bus: std_logic_vector(23 downto 0);
 signal rpg_in: std_logic_vector(23 downto 0):=(others=>'0');
 signal rpg_out: std_logic_vector(23 downto 0);
 signal rpg_sel: std_logic_vector(1 downto 0):=(others=>'0');
+signal rpg_in2: std_logic_vector(23 downto 0):=(others=>'0');
+signal rpg_out2: std_logic_vector( 23 downto 0);
+signal rpg_sel2: std_logic_vector(1 downto 0):=(others=>'0');
 signal rpg_write: std_logic:='0';
 signal A,B: std_logic_vector(11 downto 0);
 signal control: std_logic_vector(3 downto 0);
@@ -207,6 +210,134 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 									rpg_write<='0';
 									execute_instruction<=t0;
 									global_state<=end_execute;
+							end case;
+						when i_multi => 
+							case execute_instruction is 
+								when t0 =>
+									execute_instruction<=t1;
+								when t1 =>
+									rpg_sel<=IR(17 downto 16);
+									execute_instruction <= t2;
+								when t2 =>
+									control <= IR(3 downto 0);
+									A <= rpg_out(7 downto 0); --DUDA, el cambio de 15 downto 0 en lugar de 11 downto 0 se queda?
+									B <= IR(10 downto 4); --DUDA tamaño RPG (10 downto 4 -> 8 bits de multiplicacion)
+									execute_instruction <= t3;
+								when t3 =>
+									rpg_write='1';
+									if(C = '1') then
+										rpg_in <= "00000000000"&C&ACC;
+									else
+										rpg_in <= "00000000000"&ACC;
+									end if;
+									execute_instruction <= t4;
+								when t4 =>
+										rpg_write <= '0';
+										execute_instruction <= t0;
+										global_state <= end_execute;
+							end case;
+						when i_divi => 
+							case execute_instruction is 
+								when t0 =>
+									execute_instruction<=t1;
+								when t1 =>
+									rpg_sel<=IR(17 downto 16);
+									execute_instruction <= t2;
+								when t2 =>
+									control <= IR(3 downto 0);
+									A <= rpg_out(7 downto 0); --DUDA, el cambio de 15 downto 0 en lugar de 11 downto 0 se queda?
+									B <= IR(10 downto 4); --DUDA tamaño RPG (10 downto 4 -> 8 bits de multiplicacion)
+									execute_instruction <= t3;
+								when t3 =>
+									rpg_write='1';
+									if(C = '1') then
+										rpg_in <= "00000000000"&C&ACC;
+									else
+										rpg_in <= "00000000000"&ACC;
+									end if;
+									execute_instruction <= t4;
+								when t4 =>
+										rpg_write <= '0';
+										execute_instruction <= t0;
+										global_state <= end_execute;
+							end case;
+						when i_add =>
+							case execute_instruction is
+								when t0 => 
+									execute_instruction <= t1;
+								when t1 =>
+									rpg_sel <= IR(17 downto 16);
+									rpg_sel2 <=IR(15 downto 14);
+									execute_instruction <= t2;
+								when t2 =>
+									control <= IR(3 downto 0);
+									A<=rpg_out(15 downto 0); --DUDA TAMAÑO RPG
+									B<=rpg_out2(15 downto 0); --DUDA TAMAÑO RPG
+									execute_instruction <= t3;
+								when t3 =>
+									rpg_write<='1';
+									if(C = '1') then
+										rpg_in<="00000000000"&C&ACC;
+									else
+										rpg_in<="000000000000"&ACC;
+									end if;
+									execute_instruction <= t4;
+								when t4 =>
+									rpg_write <= '0';
+									execute_instruction <= t0;
+									global_state <= end_execute;
+							end case;
+						when i_sub =>
+							case execute_instruction is
+								when t0 => 
+									execute_instruction <= t1;
+								when t1 =>
+									rpg_sel <= IR(17 downto 16);
+									rpg_sel2 <=IR(15 downto 14);
+									execute_instruction <= t2;
+								when t2 =>
+									control <= IR(3 downto 0);
+									A<=rpg_out(15 downto 0); --DUDA TAMAÑO RPG
+									B<=rpg_out2(15 downto 0); --DUDA TAMAÑO RPG
+									execute_instruction <= t3;
+								when t3 =>
+									rpg_write<='1';
+									if(C = '1') then
+										rpg_in<="00000000000"&C&ACC;
+									else
+										rpg_in<="000000000000"&ACC;
+									end if;
+									execute_instruction <= t4;
+								when t4 =>
+									rpg_write <= '0';
+									execute_instruction <= t0;
+									global_state <= end_execute;
+							end case;
+						when i_mult =>
+							case execute_instruction is
+								when t0 => 
+									execute_instruction <= t1;
+								when t1 =>
+									rpg_sel <= IR(17 downto 16);
+									rpg_sel2 <=IR(15 downto 14);
+									execute_instruction <= t2;
+								when t2 =>
+									control <= IR(3 downto 0);
+									A<=rpg_out(7 downto 0); --DUDA TAMAÑO RPG
+									B<=rpg_out2(7 downto 0); --DUDA TAMAÑO RPG
+									execute_instruction <= t3;
+								when t3 =>
+									rpg_write<='1';
+									if(C = '1') then
+										rpg_in<="00000000000"&C&ACC;
+									else
+										rpg_in<="000000000000"&ACC;
+									end if;
+									execute_instruction <= t4;
+								when t4 =>
+									rpg_write <= '0';
+									execute_instruction <= t0;
+									global_state <= end_execute;
 							end case;
 						when i_load =>
 							case execute_instruction is 
