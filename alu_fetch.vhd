@@ -65,7 +65,7 @@ architecture behavior of alu_fetch is
 		A,B: in std_logic_vector(11 downto 0);
 		control: in std_logic_vector(3 downto 0);
 		result: out std_logic_vector(11 downto 0);
-		C,Z: out std_logic);
+		C,Z,S,V: out std_logic);
 	end component;
 
 signal clk: std_logic;
@@ -83,9 +83,7 @@ signal MBR: std_logic_vector(23 downto 0);
 signal IR: std_logic_vector(23 downto 0);
 signal ACC: std_logic_vector(11 downto 0);
 
-
 --entradas,salidas componentes
---signal address_bus: std_logic_vector(7 downto 0);
 signal data_bus: std_logic_vector(23 downto 0);
 signal rpg_in: std_logic_vector(23 downto 0):=(others=>'0');
 signal rpg_out: std_logic_vector(23 downto 0);
@@ -96,8 +94,7 @@ signal rpg_sel2: std_logic_vector(1 downto 0):=(others=>'0');
 signal rpg_write: std_logic:='0';
 signal A,B: std_logic_vector(11 downto 0);
 signal control: std_logic_vector(3 downto 0);
-signal C,Z: std_logic;
-
+signal C,Z,S,V: std_logic;
 
 type global_state_type is (reset_pc,fetch,fetch1,fetch2,fetch3,end_fetch,decode,end_decode, execute,end_execute); 
 signal global_state: global_state_type;
@@ -107,7 +104,6 @@ signal instruction: instruction_type;
 
 type execute_instruction_type is(t0,t1,t2,t3,t4);
 signal execute_instruction: execute_instruction_type;
-
 
 begin
 -----------IMPLEMENTACION OSCILADOR INTERNO---------------
@@ -120,11 +116,10 @@ unidades: bcdDisplay port map(clk_0,reset,Qbcd(3 downto 0),un);
 decenas: bcdDisplay port map(clk_0,reset,Qbcd(7 downto 4),de);
 centenas: bcdDisplay port map(clk_0,reset,Qbcd(11 downto 8),ce);
 millar: bcdDisplay port map(clk_0,reset,Qbcd(15 downto 12),mi);
-
 --clk
 ROM_imp: ROM port map(clk_0,reset,'1','1',MAR,data_bus);
 RPG : registrosPG port map(clk_0,reset,rpg_write,rpg_in,rpg_sel,rpg_out);
-ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);  
+ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z,S,V);  
 	process(clk_0, reset, stop_run)
 	begin
 		if (reset = '1') then
@@ -176,16 +171,40 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 						when "010011" =>instruction <= i_comp1;
 						when "010100" =>instruction <= i_comp2;
 						when "010101" =>instruction <= i_jmp;
-						when "010110" =>instruction <= i_jalr;	
-						
+						when "010110" =>instruction <= i_jalr;		
 						when others =>
 							instruction <= i_null;
 					end case;
 					global_state<=end_decode;
+					
 				when end_decode=>
 					global_state<=execute;
+					
 				when execute =>
 					case instruction is
+						when i_nop =>
+							global_state<=end_execute;
+							
+						when i_load =>
+							case execute_instruction is 
+								when t0 =>
+									execute_instruction<=t1;
+								when t1 =>
+									MAR<=IR(7 downto 0);
+									execute_instruction<=t2;
+								when t2 =>
+									execute_instruction<=t3;--sincronizar data_bus
+								when t3 =>
+									rpg_write<='1';
+									rpg_sel<=IR(17 downto 16);
+									rpg_in<=data_bus;
+									execute_instruction<=t4;
+								when t4 =>
+									rpg_write<='0';
+									execute_instruction<=t0;
+									global_state<=end_execute;
+							end case;
+							
 						when i_addi =>
 							case execute_instruction is
 								when t0 =>
@@ -369,20 +388,18 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 									execute_instruction<=t3;
 								when t3 =>
 									Rdisplay<=rpg_out(13 downto 0);
+									if(S=='1') then
+										A<=rpg_out(13 downto 0);
+										control<="1100";
+										Rdisplay<=result;
+									end if;
 									execute_instruction<=t0;
 									global_state<=end_execute;
 								when others =>
 									execute_instruction<=t0;
 									global_state<=end_execute;
 							end case;
-						when i_halt =>
-							PC<=PC-1;
-							global_state<=end_execute;
-						when i_jump =>
-							PC<=IR(7 downto 0);
-							global_state<=end_execute;
-						when i_nop =>
-							global_state<=end_execute;
+						
 						when i_adec =>
 							case execute_instruction is
 								when t0 =>
@@ -407,6 +424,7 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 									execute_instruction<=t0;
 									global_state<=end_execute;
 							end case;
+						
 						when i_bnz =>
 							if(Z = '0') then
 								PC<=PC+IR(7 downto 0);
@@ -414,9 +432,27 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 							else
 								global_state<=end_execute;
 							end if;
+						when i_bz =>
+							if(Z = '1') then
+								PC<=PC+IR(7 downto 0);
+								global_state<=end_execute;
+							else
+								global_state<=end_execute;
+							end if;	
+						when i_halt =>
+							PC<=PC-1;
+							global_state<=end_execute;
+							
+						when i_jump =>
+							PC<=IR(7 downto 0);
+							global_state<=end_execute;
+
+
+
 						when others =>
 							global_state<=end_execute;
 					end case;
+					
 				when end_execute=>
 					global_state<=fetch;
 				when others =>
@@ -426,6 +462,7 @@ ALU_imp : alu port map(clk_0,A,B,control,ACC(11 downto 0),C,Z);
 	end process;
 
 	Q<=Rdisplay;
+	
 	process(clk_0, reset)
 	begin
 		if (reset = '1') then

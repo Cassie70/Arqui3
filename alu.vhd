@@ -3,9 +3,9 @@ use ieee.std_logic_1164.all;
 
 entity alu is port(
 	clk: in std_logic;
-	A,B: in std_logic_vector(11 downto 0);
+	A,B: in std_logic_vector(15 downto 0);
 	control: in std_logic_vector(3 downto 0);
-	result: out std_logic_vector(11 downto 0);
+	result: out std_logic_vector(15 downto 0);
 	C,Z,S,V: out std_logic
 );
 end alu;
@@ -22,38 +22,38 @@ architecture a_alu of alu is
 	);
 	end component;
 	
-	component multi6 is port(
-        A, B: in std_logic_vector(11 downto 0);
-        result: out std_logic_vector(11 downto 0)
+	component multi8 is port(
+        A, B: in std_logic_vector(7 downto 0);
+        result: out std_logic_vector(15 downto 0)
     );
 	end component;
 
-	constant two : std_logic_vector(11 downto 0):="000000000010";
-	constant one : std_logic_vector(11 downto 0):="000000000001";
-	constant zero: std_logic_vector(11 downto 0):="000000000000";
+	constant two : std_logic_vector(15 downto 0):="0000000000000010";
+	constant one : std_logic_vector(15 downto 0):="0000000000000001";
+	constant zero: std_logic_vector(15 downto 0):="0000000000000000";
 	
 	signal substract: std_logic;
-	signal sum_result: std_logic_vector(11 downto 0);
-	signal logic_result: std_logic_vector(11 downto 0);
-	signal multi_result: std_logic_vector(11 downto 0);
-	signal div_result: std_logic_vector(11 downto 0);
-	signal all_results: std_logic_vector(11 downto 0);
-	signal A_temp,B_temp: std_logic_vector(11 downto 0);
+	signal sum_result: std_logic_vector(15 downto 0);
+	signal logic_result: std_logic_vector(15 downto 0);
+	signal multi_result: std_logic_vector(15 downto 0);
+	signal div_result: std_logic_vector(15 downto 0);
+	signal all_results: std_logic_vector(15 downto 0);
+	signal A_temp,B_temp: std_logic_vector(15 downto 0);
 
 begin
 	imp_add_sub_12: SumRest16Bits port map(A_temp,B_temp,'0',substract,sum_result,C);
-	imp_multi: multi6 port map(A_temp,B_temp,multi_result);
+	imp_multi: multi8 port map(A_temp(7 downto 0),B_temp(7 downto 0),multi_result);
 	--imp_div: divi6 port map(clk,A_temp,B_temp,div_result);
 	input_process:process(A,B,control)
 	begin
 		case control is
 			when "0000"=>--A+B  1 BYTE
-				A_temp<="0000"&A(7 downto 0);
-				B_temp<="0000"&B(7 downto 0);
+				A_temp<="00000000"&A(7 downto 0);
+				B_temp<="00000000"&B(7 downto 0);
 				substract<='0';
 			when "0001"=>--A-B 1 BYTE
-				A_temp<="0000"&A(7 downto 0);
-				B_temp<="0000"&B(7 downto 0);
+				A_temp<="00000000"&A(7 downto 0);
+				B_temp<="00000000"&B(7 downto 0);
 				substract<='1';
 			when "0010"=>--A+1
 				A_temp<=A;
@@ -93,12 +93,12 @@ begin
 				A_temp<=zero;
 				B_temp<=A;
 			substract<='1';
-			when "1101"=>--A*B 6 BITS
-				A_temp<="000000"&A(5 downto 0);
-				B_temp<="000000"&B(5 downto 0);
-			when "1110"=>--A/B 6 BITS
-				A_temp<="000000"&A(5 downto 0);
-				B_temp<="000000"&B(5 downto 0);
+			when "1101"=>--A*B 8 BITS
+				A_temp<="00000000"&A(7 downto 0);
+				B_temp<="00000000"&B(7 downto 0);
+			when "1110"=>--A/B 8 BITS
+				A_temp<="00000000"&A(7 downto 0);
+				B_temp<="00000000"&B(7 downto 0);
 			when "1111"=>--A LSL
 				A_temp<=A;
 				B_temp<=A;

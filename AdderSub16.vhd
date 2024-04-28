@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
-component SumRest16Bits is Port (
+entity SumRest16Bits is Port (
 		A : in std_logic_vector(15 downto 0);
 		B : in std_logic_vector(15 downto 0);
 		Cin : in std_logic;
@@ -10,7 +10,7 @@ component SumRest16Bits is Port (
 		Res : out std_logic_vector(15 downto 0);
 		Cout : out std_logic
 	);
-end component;
+end SumRest16Bits;
 
 architecture Behavioral of SumRest16Bits is
 
