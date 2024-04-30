@@ -104,7 +104,7 @@ architecture a_ROM of ROM is
 		77 => OP_LOAD&RPG_B&"00000000"&"11110111", --LOAD W, RC
 		78 => OP_DIVI&RPG_B&"000000001010"&"1110", --DIVI RB, 10 RES=W/10
 		79 => OP_SUB&RPG_B&RPG_C&"0000000000"&"0111", --SUB RB - RC, RB=W/10 - 7*Z
-		80 => OP_SUB&RPG_B&RPG_A&"0000000000"&"0111" --SUB RB - RA, RB RES= W/10 - 7*Z - X^3
+		80 => OP_SUB&RPG_B&RPG_A&"0000000000"&"0111", --SUB RB - RA, RB RES= W/10 - 7*Z - X^3
 
 		--Ecuacion d) desplegar 0000 en el display
 		246 => x"000012",-- 3 en decimal i
