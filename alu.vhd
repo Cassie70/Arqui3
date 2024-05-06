@@ -3,10 +3,11 @@ use ieee.std_logic_1164.all;
 
 entity alu is port(
 	clk: in std_logic;
+	reset: in std_logic;
 	A,B: in std_logic_vector(15 downto 0);
 	control: in std_logic_vector(3 downto 0);
 	result: out std_logic_vector(15 downto 0);
-	C,Z,S,V: out std_logic
+	C,Z,S,V,end_div: out std_logic
 );
 end alu;
 
@@ -28,13 +29,15 @@ architecture a_alu of alu is
     );
 	end component;
 	
-	component divi6 is
-    port(
-        clk: in std_logic;
-        A, B: in std_logic_vector(15 downto 0); -- a de 8 bits
-		iniciar : in std_logic;
-        result: out std_logic_vector(15 downto 0) -- b de 8 bits
-    );
+	component divi8 is
+		port(
+			clk: in std_logic;
+			enable: in std_logic;
+			reset: in std_logic;
+			A, B: in std_logic_vector(7 downto 0);
+			result: out std_logic_vector(7 downto 0);
+			end_flag: out std_logic
+		);
 	end component;
 	
 	constant two : std_logic_vector(15 downto 0):="0000000000000010";
@@ -45,15 +48,16 @@ architecture a_alu of alu is
 	signal sum_result: std_logic_vector(15 downto 0);
 	signal logic_result: std_logic_vector(15 downto 0);
 	signal multi_result: std_logic_vector(15 downto 0);
-	signal div_result: std_logic_vector(15 downto 0);
+	signal div_result: std_logic_vector(7 downto 0);
 	signal all_results: std_logic_vector(15 downto 0);
 	signal A_temp,B_temp: std_logic_vector(15 downto 0);
-	signal iniciar : std_logic:='1';
+	signal en_div: std_logic:='0';
 
 begin
 	imp_add_sub_12: SumRest16Bits port map(A_temp,B_temp,'0',substract,sum_result,C);
 	imp_multi: multi8 port map(A_temp(7 downto 0),B_temp(7 downto 0),multi_result);
-	imp_div: divi6 port map(clk,A_temp,B_temp,iniciar,div_result);
+	imp_div: divi8 port map(clk,en_div,reset,A_temp(7 downto 0),B_temp(7 downto 0),div_result,end_div);
+	
 	input_process:process(A,B,control)
 	begin
 		case control is
@@ -61,60 +65,77 @@ begin
 				A_temp<="00000000"&A(7 downto 0);
 				B_temp<="00000000"&B(7 downto 0);
 				substract<='0';
+				en_div <= '0';
 			when "0001"=>--A-B 1 BYTE
 				A_temp<="00000000"&A(7 downto 0);
 				B_temp<="00000000"&B(7 downto 0);
 				substract<='1';
+				en_div <= '0';
 			when "0010"=>--A+1
 				A_temp<=A;
 				B_temp<=one;
 				substract<='0';
-				when "0011"=>--A-1
+				en_div <= '0';
+			when "0011"=>--A-1
 				A_temp<=A;
 				B_temp<=one;
 				substract<='1';
+				en_div <= '0';
 			when "0100"=>--B+1
 				A_temp<=B;
 				B_temp<=one;
 				substract<='0';
+				en_div <= '0';
 			when "0101"=>--B-1
 				A_temp<=B;
 				B_temp<=one;
 				substract<='1';
+				en_div <= '0';
 			when "0110"=>--A+B 12 BITS
 				A_temp<=A;
 				B_temp<=B;
 				substract<='0';
+				en_div <= '0';
 			when "0111"=>--A-B 12 BITS
 				A_temp<=A;
 				B_temp<=B;
 				substract<='1';
+				en_div <= '0';
 			when "1000"=>--AND
 				logic_result<=A and B;
+				en_div <= '0';
 			when "1001"=>--OR
 				logic_result<=A or B;
+				en_div <= '0';
 			when "1010"=>--XOR
 				logic_result<=A xor B;
+				en_div <= '0';
 			when "1011"=>--COMP A 1
 				A_temp<=not A;
 				B_temp<=zero;
 				substract<='0';
+				en_div <= '0';
 			when "1100"=>--COMP A 2
 				A_temp<=zero;
 				B_temp<=A;
-			substract<='1';
+				substract<='1';
+				en_div <= '0';
 			when "1101"=>--A*B 8 BITS
 				A_temp<="00000000"&A(7 downto 0);
 				B_temp<="00000000"&B(7 downto 0);
+				en_div <= '0';
 			when "1110"=>--A/B 8 BITS
 				A_temp<="00000000"&A(7 downto 0);
 				B_temp<="00000000"&B(7 downto 0);
+				en_div <= '1';
 			when "1111"=>--A LSL
 				A_temp<=A;
 				B_temp<=A;
+				en_div <= '0';
 			when others=>
 				A_temp<=zero;
 				B_temp<=zero;
+				en_div <= '0';
 		end case;
 	end process input_process;
 	
@@ -152,7 +173,7 @@ begin
 					 sum_result   when "1011",
 					 sum_result   when "1100",
 					 multi_result when "1101",
-					 div_result   when "1110",
+		             "00000000"&div_result   when "1110",
 					 sum_result   when "1111",
 					 zero         when others;
 	result <= all_results;

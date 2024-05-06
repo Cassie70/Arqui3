@@ -291,9 +291,9 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 									end if;
 									execute_instruction <= t4;
 								when t4 =>
-										rpg_write <= '0';
-										execute_instruction <= t0;
-										global_state <= end_execute;
+									rpg_write <= '0';
+									execute_instruction <= t0;
+									global_state <= end_execute;
 							end case;
 						when i_add =>
 							case execute_instruction is
