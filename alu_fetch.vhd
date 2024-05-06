@@ -3,9 +3,8 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 ----------------------------------------------------------
-
-library machxo2;
-use machxo2.all;
+--library machxo2;
+--use machxo2.all;
 ----------------------------------------------------------
 entity alu_fetch is port(
 	reset,S0,S1: in std_logic;
@@ -18,13 +17,13 @@ end alu_fetch;
 
 architecture behavior of alu_fetch is
 ----------OSCILADOR INTERNO-------------------------------
-    component OSCH
-        generic (NOM_FREQ: string);
-        port (STDBY: in std_logic; OSC: out std_logic);
-    end component;
+    --component OSCH
+        --generic (NOM_FREQ: string);
+        --port (STDBY: in std_logic; OSC: out std_logic);
+    --end component;
     
-    attribute NOM_FREQ: string;
-    attribute NOM_FREQ of OSCinst0: label is "26.60";
+    --attribute NOM_FREQ: string;
+    --attribute NOM_FREQ of OSCinst0: label is "26.60";
 ----------------------------------------------------------
 
 	component ROM is port(
@@ -62,10 +61,11 @@ architecture behavior of alu_fetch is
 	
 	component alu is port(
 		clk: in std_logic;
+		reset: in std_logic;
 		A,B: in std_logic_vector(15 downto 0);
 		control: in std_logic_vector(3 downto 0);
 		result: out std_logic_vector(15 downto 0);
-		C,Z,S,V: out std_logic);
+		C,Z,S,V,end_div: out std_logic);
 	end component;
 	
 	component MultiplexorGeneral is port(
@@ -103,7 +103,7 @@ signal rpg_sel2: std_logic_vector(1 downto 0):=(others=>'0');
 signal rpg_write: std_logic:='0';
 signal A,B: std_logic_vector(15 downto 0);
 signal control: std_logic_vector(3 downto 0);
-signal C,Z,S,V: std_logic;
+signal C,Z,S,V,end_div: std_logic;
 
 type global_state_type is (reset_pc,fetch,fetch1,fetch2,fetch3,end_fetch,decode,end_decode, execute,end_execute); 
 signal global_state: global_state_type;
@@ -119,7 +119,7 @@ signal PC_multiplexor : std_logic_vector(7 downto 0);
 
 begin
 -----------IMPLEMENTACION OSCILADOR INTERNO---------------
-OSCinst0: OSCH generic map("26.60") port map('0', clk);
+--OSCinst0: OSCH generic map("26.60") port map('0', clk);
 ----------------------------------------------------------
 
 imp_binBCD: bin2bcd port map(reset,Q,Qbcd);
@@ -129,12 +129,12 @@ decenas: bcdDisplay port map(clk_0,reset,Qbcd(7 downto 4),de);
 centenas: bcdDisplay port map(clk_0,reset,Qbcd(11 downto 8),ce);
 millar: bcdDisplay port map(clk_0,reset,Qbcd(15 downto 12),mi);
 --clk
-ROM_imp: ROM port map(clk_0,reset,'1','1',MAR,data_bus);
-RPG : registrosPG port map(clk_0,reset,rpg_write,rpg_in,rpg_sel,rpg_out);
-ALU_imp : alu port map(clk_0,A,B,control,ACC(15 downto 0),C,Z,S,V);
+ROM_imp: ROM port map(clk,reset,'1','1',MAR,data_bus);
+RPG : registrosPG port map(clk,reset,rpg_write,rpg_in,rpg_sel,rpg_out);
+ALU_imp : alu port map(clk,reset,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
 Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 
-	process(clk_0, reset, stop_run)
+	process(clk, reset, stop_run)
 	begin
 		if (reset = '1') then
 			PC <= "00010111";
@@ -144,7 +144,7 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 			MBR<=(others=>'0');
 			IR<=(others=>'0');
 						
-		elsif (rising_edge(clk_0) and stop_run='0') then			
+		elsif (rising_edge(clk) and stop_run='0') then			
 			case global_state is
 				when reset_pc=>
 					global_state<=fetch;
@@ -253,22 +253,18 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 									rpg_sel<=IR(17 downto 16);
 									execute_instruction <= t2;
 								when t2 =>
-									control <= IR(3 downto 0);
-									A <= "00000000"&rpg_out(7 downto 0); --DUDA, el cambio de 15 downto 0 en lugar de 11 downto 0 se queda?
-									B <= "000000000" &IR(10 downto 4); --DUDA tamaño RPG (10 downto 4 -> 8 bits de multiplicacion)
+									control <= "1101";
+									A <= rpg_out(15 downto 0); --DUDA, el cambio de 15 downto 0 en lugar de 11 downto 0 se queda?
+									B <= IR(15 downto 0); --DUDA tamaño RPG (10 downto 4 -> 8 bits de multiplicacion)
 									execute_instruction <= t3;
 								when t3 =>
 									rpg_write<='1';
-									if(C = '1') then
-										rpg_in <= "0000000"&C&ACC;
-									else
-										rpg_in <= "00000000"&ACC;
-									end if;
+									rpg_in <= "00000000"&ACC;
 									execute_instruction <= t4;
 								when t4 =>
-										rpg_write <= '0';
-										execute_instruction <= t0;
-										global_state <= end_execute;
+									rpg_write <= '0';
+									execute_instruction <= t0;
+									global_state <= end_execute;
 							end case;
 						when i_divi => 
 							case execute_instruction is 
@@ -278,17 +274,17 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 									rpg_sel<=IR(17 downto 16);
 									execute_instruction <= t2;
 								when t2 =>
-									control <= IR(3 downto 0);
-									A <= "00000000" &rpg_out(7 downto 0); -- A es entrada de 16 bits a la alu obtenemos el valor que vamos a dividir
-									B <= "00000000"&IR(11 downto 4); --obtenemos el divisor de la instruccion, tiene que ser de 8 bits
-									execute_instruction <= t3;
+									control <= "1110";
+									A <= rpg_out(15 downto 0); -- A es entrada de 16 bits a la alu obtenemos el valor que vamos a dividir
+									B <= IR(15 downto 0); --obtenemos el divisor de la instruccion, tiene que ser de 8 bits
+									if(end_div = '1') then
+										execute_instruction <= t3;
+									else
+										execute_instruction <= t2;
+									end if;
 								when t3 =>
 									rpg_write<='1';
-									if(C = '1') then
-										rpg_in <= "0000000"&C&ACC;
-									else
-										rpg_in <= "00000000"&ACC;
-									end if;
+									rpg_in <= "00000000"&ACC;
 									execute_instruction <= t4;
 								when t4 =>
 									rpg_write <= '0';
