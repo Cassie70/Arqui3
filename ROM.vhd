@@ -38,7 +38,8 @@ architecture a_ROM of ROM is
 	constant OP_COMP2: std_logic_vector(5 downto 0):= "010100";
 	constant OP_JMP: std_logic_vector(5 downto 0):=   "010101";
 	constant OP_JALR: std_logic_vector(5 downto 0):=  "010110";
-
+	constant OP_CMP: std_logic_vector(5 downto 0):=   "010111";
+	constant OP_CMPI: std_logic_vector(5 downto 0):=  "011000";
 	--Control RPG
 	constant RPG_A: std_logic_vector(1 downto 0):= "00";
 	constant RPG_B: std_logic_vector(1 downto 0):= "01";
@@ -50,21 +51,16 @@ architecture a_ROM of ROM is
 	--TIPO J |OP CODE(6)| DIRECCION DE MEMORIA (18)|
 	type ROM_Array is array (0 to 255) of std_logic_vector(23 downto 0);
 	constant content: ROM_Array := (
-		0 => OP_LOAD&"00"&"00000000"&"11110111",--LOAD W,RA
-		1 =>OP_MULTI&"00"&"0000000000000101",--MULTI RA,5
-		2 => OP_DPLY&"00"&"0000000000000000",--Rdisplay<- RA
-		3 => OP_LOAD&"01"&"00000000"&"11110111",--LOAD W,RB
-		4 => OP_DIVI&"01"&"0000000000001010",--MULTI RB,5
-		5 => OP_DPLY&"01"&"0000000000000000",--Rdisplay<- RB
+		0 => OP_HALT&"000000000000000000",
 		--Ecuacion a) 17X + 25Y - W/4
-		23 => OP_LOAD&RPG_A&"00000000"&"11111000", --LOAD X, RA
-		24 => OP_MULTI&RPG_A&"000000010001"&"1101", --MULTI RA, 17 RES=
-		25 => OP_LOAD&RPG_B&"00000000"&"11111001", --LOAD Y, RB
-		26 => OP_MULTI&RPG_B&"000000011001"&"1101", --MULTI RB, 25 RES=
-		27 => OP_LOAD&RPG_C&"00000000"&"11110111", --LOAD W, RC
-		28 => OP_DIVI&RPG_C&"000000000100"&"1110", --DIVI RC, 4 RES=250
-		29 => OP_ADD&RPG_A&RPG_B&"0000000000"&"0110", --ADD RA + RB, RA RES=
-		30 => OP_SUB&RPG_A&RPG_C&"0000000000"&"0111", --SUB RA - RC, RA RES=
+		23 => OP_LOAD&RPG_A&"0000000011111000",--LOAD X, RA
+		24 =>OP_MULTI&RPG_A&"0000000000010001",--MULTI RA,17 
+		25 => OP_LOAD&RPG_B&"0000000011111001",--LOAD Y, RB
+		26 =>OP_MULTI&RPG_B&"0000000000011001",--MULTI RB,25 
+		27 => OP_LOAD&RPG_C&"0000000011110111",--LOAD W,RC
+		28 => OP_DIVI&RPG_C&"0000000000000100",--DIVI RC,4 
+		29 => OP_ADD&RPG_A&RPG_B&RPG_A&"000000000000",--ADD RA,RB,RA 
+		30 => OP_SUB&RPG_A&RPG_C&RPG_A&"000000000000",--SUB RA,RC,RA 
 
 		--Ecuacion b) 10X^2 + 30X - Z/2
 		47 => OP_LOAD&RPG_A&"00000000"&"11111000", --LOAD X, RA

@@ -10,6 +10,7 @@ entity alu_fetch is port(
 	reset,S0,S1: in std_logic;
 	stop_run: in std_logic;
 	display: out std_logic_vector(6 downto 0);
+	signo: out std_logic;
 	Pc_directo : in std_logic;
 	sel: out std_logic_vector(3 downto 0)
 );
@@ -37,13 +38,16 @@ architecture behavior of alu_fetch is
 	end component;
 		
 	component registrosPG is Port ( 
-		clk      : in  STD_LOGIC;
-	   reset    : in  STD_LOGIC;
-	   enable   : in  STD_LOGIC;
-	   data_in  : in  STD_LOGIC_VECTOR (23 downto 0);
-	   selector : in  STD_LOGIC_VECTOR (1 downto 0);
-	   data_out : out STD_LOGIC_VECTOR (23 downto 0));
+		clk        : in  STD_LOGIC;
+		reset      : in  STD_LOGIC;
+		enable     : in  STD_LOGIC;
+		data_in    : in  STD_LOGIC_VECTOR (23 downto 0);
+		selector1  : in  STD_LOGIC_VECTOR (1 downto 0); 
+		selector2  : in  STD_LOGIC_VECTOR (1 downto 0);
+		data_out1  : out STD_LOGIC_VECTOR (23 downto 0);
+		data_out2  : out STD_LOGIC_VECTOR (23 downto 0)); 
 	end component;
+
 	
 	component bcdDisplay is port(
 		CLK,CLR: IN STD_LOGIC;
@@ -95,10 +99,9 @@ signal ACC: std_logic_vector(15 downto 0);
 --entradas,salidas componentes
 signal data_bus: std_logic_vector(23 downto 0);
 signal rpg_in: std_logic_vector(23 downto 0):=(others=>'0');
-signal rpg_out: std_logic_vector(23 downto 0);
-signal rpg_sel: std_logic_vector(1 downto 0):=(others=>'0');
-signal rpg_in2: std_logic_vector(23 downto 0):=(others=>'0');
-signal rpg_out2: std_logic_vector( 23 downto 0);
+signal rpg_out1: std_logic_vector(23 downto 0);
+signal rpg_sel1: std_logic_vector(1 downto 0):=(others=>'0');
+signal rpg_out2: std_logic_vector(23 downto 0);
 signal rpg_sel2: std_logic_vector(1 downto 0):=(others=>'0');
 signal rpg_write: std_logic:='0';
 signal A,B: std_logic_vector(15 downto 0);
@@ -108,7 +111,8 @@ signal C,Z,S,V,end_div: std_logic;
 type global_state_type is (reset_pc,fetch,fetch1,fetch2,fetch3,end_fetch,decode,end_decode, execute,end_execute); 
 signal global_state: global_state_type;
 
-type instruction_type is (i_nop,i_load,i_addi,i_dply,i_adec,i_bnz,i_jump,i_bz,i_bs,i_null,i_bnc,i_bc,i_bnv,i_bv,i_halt,i_add,i_sub,i_mult,i_div,i_multi,i_divi,i_comp1,i_comp2,i_jmp,i_jalr);
+type instruction_type is (i_nop,i_load,i_addi,i_dply,i_adec,i_bnz,i_jump,i_bz,i_bs,i_null,i_bnc,i_bc,i_bnv,i_bv,
+i_halt,i_add,i_sub,i_mult,i_div,i_multi,i_divi,i_comp1,i_comp2,i_jmp,i_jalr,i_cmp,i_cmpi);
 
 signal instruction: instruction_type;
 
@@ -130,7 +134,7 @@ centenas: bcdDisplay port map(clk_0,reset,Qbcd(11 downto 8),ce);
 millar: bcdDisplay port map(clk_0,reset,Qbcd(15 downto 12),mi);
 --clk
 ROM_imp: ROM port map(clk,reset,'1','1',MAR,data_bus);
-RPG : registrosPG port map(clk,reset,rpg_write,rpg_in,rpg_sel,rpg_out);
+RPG : registrosPG port map(clk,reset,rpg_write,rpg_in,rpg_sel1,rpg_sel2,rpg_out1,rpg_out2);
 ALU_imp : alu port map(clk,reset,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
 Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 
@@ -186,7 +190,9 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 						when "010011" =>instruction <= i_comp1;
 						when "010100" =>instruction <= i_comp2;
 						when "010101" =>instruction <= i_jmp;
-						when "010110" =>instruction <= i_jalr;		
+						when "010110" =>instruction <= i_jalr;
+						when "010111" =>instruction <= i_cmp;
+						when "011000" =>instruction <= i_cmpi;		
 						when others =>
 							instruction <= i_null;
 					end case;
@@ -211,7 +217,7 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 									execute_instruction<=t3;--sincronizar data_bus
 								when t3 =>
 									rpg_write<='1';
-									rpg_sel<=IR(17 downto 16);
+									rpg_sel1<=IR(17 downto 16);
 									rpg_in<=data_bus;
 									execute_instruction<=t4;
 								when t4 =>
@@ -225,11 +231,11 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when t0 =>
 									execute_instruction<=t1;
 								when t1 =>
-									rpg_sel<=IR(17 downto 16);
+									rpg_sel1<=IR(17 downto 16);
 									execute_instruction<=t2;
 								when t2 =>
 									control<=IR(3 downto 0);
-									A<="0000"& rpg_out(11 downto 0);
+									A<="0000"& rpg_out1(11 downto 0);
 									B<="0000"& IR(15 downto 4);
 									execute_instruction<=t3;
 								when t3 =>
@@ -250,11 +256,11 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when t0 =>
 									execute_instruction<=t1;
 								when t1 =>
-									rpg_sel<=IR(17 downto 16);
+									rpg_sel1<=IR(17 downto 16);
 									execute_instruction <= t2;
 								when t2 =>
 									control <= "1101";
-									A <= rpg_out(15 downto 0); --DUDA, el cambio de 15 downto 0 en lugar de 11 downto 0 se queda?
+									A <= rpg_out1(15 downto 0); --DUDA, el cambio de 15 downto 0 en lugar de 11 downto 0 se queda?
 									B <= IR(15 downto 0); --DUDA tamaño RPG (10 downto 4 -> 8 bits de multiplicacion)
 									execute_instruction <= t3;
 								when t3 =>
@@ -271,11 +277,11 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when t0 =>
 									execute_instruction<=t1;
 								when t1 =>
-									rpg_sel<=IR(17 downto 16);
+									rpg_sel1<=IR(17 downto 16);
 									execute_instruction <= t2;
 								when t2 =>
 									control <= "1110";
-									A <= rpg_out(15 downto 0); -- A es entrada de 16 bits a la alu obtenemos el valor que vamos a dividir
+									A <= rpg_out1(15 downto 0); -- A es entrada de 16 bits a la alu obtenemos el valor que vamos a dividir
 									B <= IR(15 downto 0); --obtenemos el divisor de la instruccion, tiene que ser de 8 bits
 									if(end_div = '1') then
 										execute_instruction <= t3;
@@ -296,13 +302,14 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when t0 => 
 									execute_instruction <= t1;
 								when t1 =>
-									rpg_sel <= IR(17 downto 16);
-									rpg_sel2 <=IR(15 downto 14);
+									rpg_sel1 <= IR(17 downto 16);
+									rpg_sel2 <= IR(15 downto 14);
 									execute_instruction <= t2;
 								when t2 =>
-									control <= IR(3 downto 0);
-									A<=rpg_out(15 downto 0); --DUDA TAMAÑO RPG
-									B<=rpg_out2(15 downto 0); --DUDA TAMAÑO RPG
+									rpg_sel1 <= IR(13 downto 12);
+									control  <= "0110";
+									A<=rpg_out1(15 downto 0);
+									B<=rpg_out2(15 downto 0);
 									execute_instruction <= t3;
 								when t3 =>
 									rpg_write<='1';
@@ -315,20 +322,21 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when t4 =>
 									rpg_write <= '0';
 									execute_instruction <= t0;
-									global_state <= end_execute;
+									global_state <= end_execute;	
 							end case;
 						when i_sub =>
 							case execute_instruction is
 								when t0 => 
 									execute_instruction <= t1;
 								when t1 =>
-									rpg_sel <= IR(17 downto 16);
-									rpg_sel2 <=IR(15 downto 14);
+									rpg_sel1 <= IR(17 downto 16);
+									rpg_sel2 <= IR(15 downto 14);
 									execute_instruction <= t2;
 								when t2 =>
-									control <= IR(3 downto 0);
-									A<=rpg_out(15 downto 0); --DUDA TAMAÑO RPG
-									B<=rpg_out2(15 downto 0); --DUDA TAMAÑO RPG
+									rpg_sel1 <= IR(13 downto 12);
+									control  <= "0111";
+									A<=rpg_out1(15 downto 0);
+									B<=rpg_out2(15 downto 0);
 									execute_instruction <= t3;
 								when t3 =>
 									rpg_write<='1';
@@ -341,19 +349,19 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when t4 =>
 									rpg_write <= '0';
 									execute_instruction <= t0;
-									global_state <= end_execute;
+									global_state <= end_execute;	
 							end case;
 						when i_mult =>
 							case execute_instruction is
 								when t0 => 
 									execute_instruction <= t1;
 								when t1 =>
-									rpg_sel <= IR(17 downto 16);
+									rpg_sel1 <= IR(17 downto 16);
 									rpg_sel2 <=IR(15 downto 14);
 									execute_instruction <= t2;
 								when t2 =>
 									control <= IR(3 downto 0);
-									A<="00000000"&rpg_out(7 downto 0); --DUDA TAMAÑO RPG
+									A<="00000000"&rpg_out1(7 downto 0); --DUDA TAMAÑO RPG
 									B<="00000000"&rpg_out2(7 downto 0); --DUDA TAMAÑO RPG
 									execute_instruction <= t3;
 								when t3 =>
@@ -375,20 +383,24 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when t0 =>
 									execute_instruction<=t1;
 								when t1 =>
-									rpg_sel<=IR(17 downto 16);
+									rpg_sel1<=IR(17 downto 16);
 									execute_instruction<=t2;
 								when t2 =>--sincronizar  data_out;
 									execute_instruction<=t3;
 								when t3 =>
-									Rdisplay<=rpg_out(13 downto 0);
 									if(S='1') then
-										A<="00"&rpg_out(13 downto 0);
+										A<=rpg_out1(15 downto 0);
 										control<="1100";
-										Rdisplay<="00"&ACC(11 downto 0);
+										signo<='1';
+									else
+										signo<='0';
+										Rdisplay<=rpg_out1(13 downto 0);
 									end if;
-									execute_instruction<=t0;
-									global_state<=end_execute;
-								when others =>
+									execute_instruction<=t4;
+								when t4 =>
+									if(S = '0') then 
+										Rdisplay<=ACC(13 downto 0);
+									end if;
 									execute_instruction<=t0;
 									global_state<=end_execute;
 							end case;
@@ -398,11 +410,11 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when t0 =>
 									execute_instruction<=t1;
 								when t1 =>
-									rpg_sel<=IR(17 downto 16);
+									rpg_sel1<=IR(17 downto 16);
 									execute_instruction<=t2;
 								when t2 =>
 									control<=IR(3 downto 0);
-									A<="0000"&rpg_out(11 downto 0);
+									A<="0000"&rpg_out1(11 downto 0);
 									execute_instruction<=t3;
 								when t3 =>
 									rpg_write<='1';
@@ -444,8 +456,45 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 							PC<=IR(7 downto 0);
 							global_state<=end_execute;
 
-
-
+						when i_cmp =>
+							case execute_instruction is
+								when t0 => 
+									execute_instruction <= t1;
+								when t1 =>
+									rpg_sel1 <= IR(17 downto 16);
+									rpg_sel2 <= IR(15 downto 14);
+									execute_instruction <= t2;
+								when t2 =>
+									control  <= "0111";
+									A<=rpg_out1(15 downto 0);
+									B<=rpg_out2(15 downto 0);
+									execute_instruction <= t3;
+								when t3 =>
+									execute_instruction <= t0;
+									global_state <= end_execute;
+								when others =>
+									execute_instruction <= t0;
+									global_state <= end_execute;
+							end case;
+						when i_cmpi =>
+							case execute_instruction is
+								when t0 =>
+									execute_instruction<=t1;
+								when t1 =>
+									rpg_sel1<=IR(17 downto 16);
+									execute_instruction<=t2;
+								when t2 =>
+									control<="0111";
+									A<="0000"& rpg_out1(15 downto 0);
+									B<="0000"& IR(15 downto 0);
+									execute_instruction<=t3;
+								when t3 =>
+									execute_instruction<=t0;
+									global_state<=end_execute;
+								when others =>
+									execute_instruction <= t0;
+									global_state <= end_execute;
+							end case;
 						when others =>
 							global_state<=end_execute;
 					end case;
