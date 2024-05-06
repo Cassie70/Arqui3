@@ -108,10 +108,10 @@ architecture a_ROM of ROM is
 
 		--Ecuacion d) desplegar 0000 en el display
 		246 => x"000012",-- 3 en decimal i
-		247 => x"0003EB", -- 1003 en decimal W
-		248 => x"000065", -- 101 en decimal X
-		249 => x"000046", -- 70 en decimal Y 
-		250 => x"000032", -- 50 en decimal Z
+		247 => x"000028", -- 40 en decimal W pra que sea divisible exacto del 10 y del 4
+		248 => x"000001", -- 1 en decimal X
+		249 => x"000002", -- 2 en decimal Y 
+		250 => x"000003", -- 3 en decimal Z
 		251 => x"000012", -- 18 en decimal M
 		252 => x"000007", -- 7 en decimal N 
 		253 => x"000017", -- 23 en decimal O 

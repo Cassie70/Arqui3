@@ -17,10 +17,16 @@ component SumRest16Bits is Port (
 	);
 end component;
 
+
+
+
+
+
 component divi6 is
     port(
         clk: in std_logic;
         A, B: in std_logic_vector(15 downto 0); -- a de 8 bits
+		iniciar : in std_logic;
         result: out std_logic_vector(15 downto 0) -- b de 8 bits
     );
 end component;
@@ -33,10 +39,11 @@ signal Res_t : std_logic_vector(15 downto 0) := "0000000000000000";
 signal Cout_t : std_logic := '0';
 signal clk_t : std_logic := '0';
 signal result_t: std_logic_vector(15 downto 0) :=  "0000000000000000";-- b de 8 bits
+signal iniciar_t : std_logic := '0';
 begin
 
 sumador_t : SumRest16Bits port map (A_t, B_t,Cin_t,Op_t,Res_t,Cout_t);
-divisor : divi6 port map (clk_t,A_t,B_t,result_t);
+divisor : divi6 port map (clk_t,A_t,B_t,iniciar_t,result_t);
 
 clk_process: process
     begin
@@ -57,17 +64,12 @@ assert result_t = "0000000000000000" report "salida de 0 divisor" severity note;
 wait for 100 ns; 
 
 A_t <= "0000000000000011";
-B_t <= "0000000000000001";
+B_t <= "0000000000000011";
+Op_t <= '1';
+iniciar_t <= '1';
 --deberia salir 4 100
 assert Res_t = "0000000000000100" report "salida diferente de 4" severity note;
 assert result_t = "0000000000000011" report "salida de 3 o diferente de 3 vemos de la division" severity note;
 
-wait for 100 ns;
-
-A_t <= "0000000000000110";
-B_t <= "0000000000000110";
-assert Res_t = "0000000000001100" report "salida diferente de 6 " severity note;
-assert result_t = "0000000000000001" report "salida de 1 o diferente de 1 divisor  " severity note;
-wait for 100 ns;
 end process prueba;
 end architecture;

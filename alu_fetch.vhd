@@ -4,15 +4,15 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 ----------------------------------------------------------
 
+library machxo2;
+use machxo2.all;
 ----------------------------------------------------------
 entity alu_fetch is port(
-	reset: in std_logic;
+	reset,S0,S1: in std_logic;
 	stop_run: in std_logic;
 	display: out std_logic_vector(6 downto 0);
 	Pc_directo : in std_logic;
-	sel: out std_logic_vector(3 downto 0);
-	s0: in std_logic;
-	s1: in std_logic
+	sel: out std_logic_vector(3 downto 0)
 );
 end alu_fetch;
 
@@ -137,14 +137,13 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 	process(clk_0, reset, stop_run)
 	begin
 		if (reset = '1') then
+			PC <= "00010111";
 			global_state <= reset_pc;
 			execute_instruction<=t0;
 			MAR<=(others=>'0');
 			MBR<=(others=>'0');
 			IR<=(others=>'0');
-			if(stop_run = '1')then
-				PC <= PC_multiplexor;
-			end if;
+						
 		elsif (rising_edge(clk_0) and stop_run='0') then			
 			case global_state is
 				when reset_pc=>
