@@ -44,58 +44,72 @@ architecture a_ROM of ROM is
 	
 
 	--Control RPG
-	constant RPG_A: std_logic_vector(1 downto 0):= "00";
-	constant RPG_B: std_logic_vector(1 downto 0):= "01";
-	constant RPG_C: std_logic_vector(1 downto 0):= "10"; 
-	constant RPG_D: std_logic_vector(1 downto 0):= "11";
+	constant RA: std_logic_vector(1 downto 0):= "00";
+	constant RB: std_logic_vector(1 downto 0):= "01";
+	constant RC: std_logic_vector(1 downto 0):= "10"; 
+	constant RD: std_logic_vector(1 downto 0):= "11";
 
 	--TIPO I |OP CODE(6)| REGISTRO DESTINO(2) | DIRECCION DE MEMORIA (16) Y OP A REALIZAR|
 	--TIPO R |OP CODE(6)| REGISTRO DESTINO(2) | DIRECCION DE MEMORIA (16)|
 	--TIPO J |OP CODE(6)| DIRECCION DE MEMORIA (18)|
 	type ROM_Array is array (0 to 255) of std_logic_vector(23 downto 0);
 	constant content: ROM_Array := (
-		0 => OP_LOAD&RPG_A&"0000000011110101",--LOAD 0,RA
-		1 => OP_DPLY&RPG_A&"0000000000000000", --DPLY RA
-		2 => OP_ADDI&RPG_A&"0000000000000001", --ADDI RA,1
-		3 => OP_CMPI&RPG_A&"0000000000011110", --CMPI RA,30
-		4 => OP_BNZ&"001111111111111100",--BNZ -3
-		5 => OP_DPLY&RPG_A&"0000000000000000", --DPLY RA
+		0 => OP_LOAD&RA&x"00F5",--LOAD 0,RA
+		1 => OP_DPLY&RA&x"0000", --DPLY RA
+		2 => OP_ADDI&RA&x"0001", --ADDI RA,1
+		3 => OP_CMPI&RA&x"001E", --CMPI RA,30
+		4 =>OP_BNZ&"10"&x"00FC",--BNZ -4
+		5 => OP_DPLY&RA&x"0000", --DPLY RA
+		
+		7 => OP_LOAD&RC&x"00F4",--LOAD j, RC
+		8 => OP_LOAD&RD&x"00F4",--LOAD j, RD
+		9 => OP_ADEC&RC&"000000000000"&"0011",
+		10 =>OP_ADEC&RD&"000000000000"&"0011",
+		11 =>OP_NOP&"000000000000000000",
+		12 =>OP_BNZ&"10"&x"00FD",
+		13 =>OP_CMPI&RC&x"0000",
+		14 =>OP_BNZ&"10"&x"00F9",
+		15 =>OP_LOAD&RB&x"00FF",--LOAD 0,RA
+		16 =>OP_DPLY&RB&x"0000", --DPLY RA
+		17 =>OP_HALT&"000000000000000000",
 		--Ecuacion a) 17X + 25Y - W/4
-		23 => OP_LOAD&RPG_A&"0000000011111000",--LOAD X, RA
-		24 =>OP_MULTI&RPG_A&"0000000000010001",--MULTI RA,17 
-		25 => OP_LOAD&RPG_B&"0000000011111001",--LOAD Y, RB
-		26 =>OP_MULTI&RPG_B&"0000000000011001",--MULTI RB,25 
-		27 => OP_LOAD&RPG_C&"0000000011110111",--LOAD W,RC
-		28 => OP_DIVI&RPG_C&"0000000000000100",--DIVI RC,4 
-		29 => OP_ADD&RPG_A&RPG_B&RPG_A&"000000000000",--ADD RA,RB,RA 
-		30 => OP_SUB&RPG_A&RPG_C&RPG_A&"000000000000",--SUB RA,RC,RA 
-
+		23 => OP_LOAD&RA&x"00F8",--LOAD X, RA
+		24 =>OP_MULTI&RA&x"0011",--MULTI RA,17 
+		25 => OP_LOAD&RB&x"00F9",--LOAD Y, RB
+		26 =>OP_MULTI&RB&x"0019",--MULTI RB,25 
+		27 => OP_LOAD&RC&x"00F7",--LOAD W,RC
+		28 => OP_DIVI&RC&x"0004",--DIVI RC,4 
+		29 => OP_ADD&RA&RB&RA&x"000",--ADD RA,RB,RA 
+		30 => OP_SUB&RA&RC&RA&x"000",--SUB RA,RC,RA 
+		31 => OP_DPLY&RA&x"0000",--DPLY RA
+		32 => OP_JMP&"10"&x"0007",--JMP 6
 		--Ecuacion b) 10X^2 + 30X - Z/2
-		47 => OP_LOAD&RPG_A&"00000000"&"11111000", --LOAD X, RA
-		48 => OP_LOAD&RPG_B&"00000000"&"11111000", --LOAD X, RB
-		49 => OP_MULT&RPG_A&RPG_B&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X
-		50 => OP_MULTI&RPG_A&"000000001010"&"1101", --MULTI RA, 10 RES=10*X*X
-		51 => OP_MULTI&RPG_B&"000000011110"&"1101", --MULTI RB, 30 RES=30*X
-		52 => OP_LOAD&RPG_C&"00000000"&"11111010", --LOAD Z, RC
-		53 => OP_DIVI&RPG_C&"000000000010"&"1110", --DIVI RC, 2 RES=Z/2
-		54 => OP_ADD&RPG_A&RPG_B&"0000000000"&"0110", --ADD RA + RB, RA RES=10*X*X + X*X
-		55 => OP_SUB&RPG_A&RPG_C&"0000000000"&"0111", --SUB RA - RC, RA RES= 10*X*X + X*X - Z/2
+		47 => OP_LOAD&RA&"00000000"&"11111000", --LOAD X, RA
+		48 => OP_LOAD&RB&"00000000"&"11111000", --LOAD X, RB
+		49 => OP_MULT&RA&RB&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X
+		50 => OP_MULTI&RA&"000000001010"&"1101", --MULTI RA, 10 RES=10*X*X
+		51 => OP_MULTI&RB&"000000011110"&"1101", --MULTI RB, 30 RES=30*X
+		52 => OP_LOAD&RC&"00000000"&"11111010", --LOAD Z, RC
+		53 => OP_DIVI&RC&"000000000010"&"1110", --DIVI RC, 2 RES=Z/2
+		54 => OP_ADD&RA&RB&"0000000000"&"0110", --ADD RA + RB, RA RES=10*X*X + X*X
+		55 => OP_SUB&RA&RC&"0000000000"&"0111", --SUB RA - RC, RA RES= 10*X*X + X*X - Z/2
 
 		--Ecuacion c) -X^3 - 7Z +W/10
-		71 => OP_LOAD&RPG_A&"00000000"&"11111000", --LOAD X, RA
-		72 => OP_LOAD&RPG_B&"00000000"&"11111000", --LOAD X, RB
-		73 => OP_MULT&RPG_A&RPG_B&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X
-		74 => OP_MULT&RPG_A&RPG_B&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X*X
-		75 => OP_LOAD&RPG_C&"00000000"&"11111010", --LOAD Z, RC
-		76 => OP_MULTI&RPG_C&"000000000111"&"1101", --MULTI RC, 7 RES=7*Z
-		77 => OP_LOAD&RPG_B&"00000000"&"11110111", --LOAD W, RC
-		78 => OP_DIVI&RPG_B&"000000001010"&"1110", --DIVI RB, 10 RES=W/10
-		79 => OP_SUB&RPG_B&RPG_C&"0000000000"&"0111", --SUB RB - RC, RB=W/10 - 7*Z
-		80 => OP_SUB&RPG_B&RPG_A&"0000000000"&"0111", --SUB RB - RA, RB RES= W/10 - 7*Z - X^3
+		71 => OP_LOAD&RA&"00000000"&"11111000", --LOAD X, RA
+		72 => OP_LOAD&RB&"00000000"&"11111000", --LOAD X, RB
+		73 => OP_MULT&RA&RB&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X
+		74 => OP_MULT&RA&RB&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X*X
+		75 => OP_LOAD&RC&"00000000"&"11111010", --LOAD Z, RC
+		76 => OP_MULTI&RC&"000000000111"&"1101", --MULTI RC, 7 RES=7*Z
+		77 => OP_LOAD&RB&"00000000"&"11110111", --LOAD W, RC
+		78 => OP_DIVI&RB&"000000001010"&"1110", --DIVI RB, 10 RES=W/10
+		79 => OP_SUB&RB&RC&"0000000000"&"0111", --SUB RB - RC, RB=W/10 - 7*Z
+		80 => OP_SUB&RB&RA&"0000000000"&"0111", --SUB RB - RA, RB RES= W/10 - 7*Z - X^3
 
 		--Ecuacion d) desplegar 0000 en el display
-		245 => x"000000",
-		246 => x"00001E",-- 30 en decimal i
+		244 => x"00FFFF",
+		245 => x"000000",-- 0
+		246 => x"000003",-- 30 en decimal i
 		247 => x"000028", -- 40 en decimal W pra que sea divisible exacto del 10 y del 4
 		248 => x"000001", -- 1 en decimal X
 		249 => x"000002", -- 2 en decimal Y 
@@ -105,7 +119,7 @@ architecture a_ROM of ROM is
 		253 => x"000017", -- 23 en decimal O 
 		254 => x"000037", -- 55 en decimal P 
 		255 => x"00004D", -- 77 en decimal Q
-		others => x"FFFFFF"
+		others => x"000000"
 	);
 begin
 	process(clk,clr,read_m,address)

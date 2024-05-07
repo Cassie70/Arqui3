@@ -434,28 +434,44 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 						
 						when i_bnz =>
 							if(Z = '0') then
-								PC<=PC+IR(7 downto 0);
+								if(IR(17)='0') then
+									PC<=IR(7 downto 0);
+								else
+									PC<=PC+IR(7 downto 0);
+								end if;
 								global_state<=end_execute;
 							else
 								global_state<=end_execute;
 							end if;
 						when i_bz =>
 							if(Z = '1') then
-								PC<=PC+IR(7 downto 0);
+								if(IR(17)='0') then
+									PC<=IR(7 downto 0);
+								else
+									PC<=PC+IR(7 downto 0);
+								end if;
 								global_state<=end_execute;
 							else
 								global_state<=end_execute;
 							end if;
 						when i_bns =>
 							if(S = '0') then
-								PC<=PC+IR(7 downto 0);
+								if(IR(17)='0') then
+									PC<=IR(7 downto 0);
+								else
+									PC<=PC+IR(7 downto 0);
+								end if;
 								global_state<=end_execute;
 							else
 								global_state<=end_execute;
 							end if;
 						when i_bs =>
 							if(S = '1') then
-								PC<=PC+IR(7 downto 0);
+								if(IR(17)='0') then
+									PC<=IR(7 downto 0);
+								else
+									PC<=PC+IR(7 downto 0);
+								end if;
 								global_state<=end_execute;
 							else
 								global_state<=end_execute;
@@ -469,7 +485,11 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 							global_state<=end_execute;
 							
 						when i_jump =>
-							PC<=IR(7 downto 0);
+							if(IR(17)='0') then
+								PC<=IR(7 downto 0);
+							else
+								PC<=PC+IR(7 downto 0);
+							end if;
 							global_state<=end_execute;
 
 						when i_cmp =>
