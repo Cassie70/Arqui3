@@ -23,23 +23,26 @@ architecture a_ROM of ROM is
 	constant OP_BNZ: std_logic_vector(5 downto 0):=   "000101";
 	constant OP_BZ: std_logic_vector(5 downto 0):=    "000110";
 	constant OP_BS: std_logic_vector(5 downto 0):=    "000111";
-	constant OP_BNC: std_logic_vector(5 downto 0):=   "001000";
-	constant OP_BC: std_logic_vector(5 downto 0):=    "001001";
-	constant OP_BNV: std_logic_vector(5 downto 0):=   "001010";
-	constant OP_BV: std_logic_vector(5 downto 0):=    "001011";
-	constant OP_HALT: std_logic_vector(5 downto 0):=  "001100";
-	constant OP_ADD: std_logic_vector(5 downto 0):=   "001101";
-	constant OP_SUB: std_logic_vector(5 downto 0):=   "001110";
-	constant OP_MULT: std_logic_vector(5 downto 0):=  "011111";
-	constant OP_DIV: std_logic_vector(5 downto 0):=   "010000";
-	constant OP_MULTI: std_logic_vector(5 downto 0):= "010001";
-	constant OP_DIVI: std_logic_vector(5 downto 0):=  "010010";
-	constant OP_COMP1: std_logic_vector(5 downto 0):= "010011";
-	constant OP_COMP2: std_logic_vector(5 downto 0):= "010100";
-	constant OP_JMP: std_logic_vector(5 downto 0):=   "010101";
-	constant OP_JALR: std_logic_vector(5 downto 0):=  "010110";
-	constant OP_CMP: std_logic_vector(5 downto 0):=   "010111";
-	constant OP_CMPI: std_logic_vector(5 downto 0):=  "011000";
+	constant OP_BNS: std_logic_vector(5 downto 0):=   "001000";
+	constant OP_BNC: std_logic_vector(5 downto 0):=   "001001";
+	constant OP_BC: std_logic_vector(5 downto 0):=    "001010";
+	constant OP_BNV: std_logic_vector(5 downto 0):=   "001011";
+	constant OP_BV: std_logic_vector(5 downto 0):=    "001100";
+	constant OP_HALT: std_logic_vector(5 downto 0):=  "001101";
+	constant OP_ADD: std_logic_vector(5 downto 0):=   "001110";
+	constant OP_SUB: std_logic_vector(5 downto 0):=   "011111";
+	constant OP_MULT: std_logic_vector(5 downto 0):=  "010000";
+	constant OP_DIV: std_logic_vector(5 downto 0):=   "010001";
+	constant OP_MULTI: std_logic_vector(5 downto 0):= "010010";
+	constant OP_DIVI: std_logic_vector(5 downto 0):=  "010011";
+	constant OP_COMP1: std_logic_vector(5 downto 0):= "010100";
+	constant OP_COMP2: std_logic_vector(5 downto 0):= "010101";
+	constant OP_JMP: std_logic_vector(5 downto 0):=   "010110";
+	constant OP_JALR: std_logic_vector(5 downto 0):=  "010111";
+	constant OP_CMP: std_logic_vector(5 downto 0):=   "011000";
+	constant OP_CMPI: std_logic_vector(5 downto 0):=  "011001";
+	
+
 	--Control RPG
 	constant RPG_A: std_logic_vector(1 downto 0):= "00";
 	constant RPG_B: std_logic_vector(1 downto 0):= "01";
@@ -51,7 +54,12 @@ architecture a_ROM of ROM is
 	--TIPO J |OP CODE(6)| DIRECCION DE MEMORIA (18)|
 	type ROM_Array is array (0 to 255) of std_logic_vector(23 downto 0);
 	constant content: ROM_Array := (
-		0 => OP_HALT&"000000000000000000",
+		0 => OP_LOAD&RPG_A&"0000000011110101",--LOAD 0,RA
+		1 => OP_DPLY&RPG_A&"0000000000000000", --DPLY RA
+		2 => OP_ADDI&RPG_A&"0000000000000001", --ADDI RA,1
+		3 => OP_CMPI&RPG_A&"0000000000011110", --CMPI RA,30
+		4 => OP_BNZ&"001111111111111100",--BNZ -3
+		5 => OP_DPLY&RPG_A&"0000000000000000", --DPLY RA
 		--Ecuacion a) 17X + 25Y - W/4
 		23 => OP_LOAD&RPG_A&"0000000011111000",--LOAD X, RA
 		24 =>OP_MULTI&RPG_A&"0000000000010001",--MULTI RA,17 
@@ -86,7 +94,8 @@ architecture a_ROM of ROM is
 		80 => OP_SUB&RPG_B&RPG_A&"0000000000"&"0111", --SUB RB - RA, RB RES= W/10 - 7*Z - X^3
 
 		--Ecuacion d) desplegar 0000 en el display
-		246 => x"000012",-- 3 en decimal i
+		245 => x"000000",
+		246 => x"00001E",-- 30 en decimal i
 		247 => x"000028", -- 40 en decimal W pra que sea divisible exacto del 10 y del 4
 		248 => x"000001", -- 1 en decimal X
 		249 => x"000002", -- 2 en decimal Y 
