@@ -3,11 +3,11 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 ----------------------------------------------------------
-library machxo2;
-use machxo2.all;
+--library machxo2;
+--use machxo2.all; 
 ----------------------------------------------------------
 entity alu_fetch is port(
-	--clk : in std_logic;
+	clk : in std_logic;
 	reset,S0,S1: in std_logic;
 	stop_run: in std_logic;
 	display: out std_logic_vector(6 downto 0);
@@ -19,12 +19,12 @@ end alu_fetch;
 
 architecture behavior of alu_fetch is
 ----------OSCILADOR INTERNO-------------------------------
-    component OSCH
-        generic (NOM_FREQ: string);
-        port (STDBY: in std_logic; OSC: out std_logic);
-    end component;
-    attribute NOM_FREQ: string;
-    attribute NOM_FREQ of OSCinst0: label is "26.60";
+    --component OSCH
+        --generic (NOM_FREQ: string);
+        --port (STDBY: in std_logic; OSC: out std_logic);
+    --end component;
+    --attribute NOM_FREQ: string;
+    --attribute NOM_FREQ of OSCinst0: label is "26.60"; 
 ----------------------------------------------------------
 
 	component ROM is port(
@@ -81,7 +81,7 @@ architecture behavior of alu_fetch is
 	
 	
 
-signal clk: std_logic;
+--signal clk: std_logic;
 signal clk_0: std_logic:='0';
 signal clk_1: std_logic:='0';
 signal Q: std_logic_vector(13 downto 0);
@@ -111,8 +111,8 @@ signal C,Z,S,V,end_div: std_logic;
 type global_state_type is (reset_pc,fetch,fetch1,fetch2,fetch3,end_fetch,decode,end_decode, execute,end_execute); 
 signal global_state: global_state_type;
 
-type instruction_type is (i_nop,i_load,i_addi,i_dply,i_adec,i_bnz,i_jump,i_bz,i_bs,i_bns,i_null,i_bnc,i_bc,i_bnv,i_bv,
-i_halt,i_add,i_sub,i_mult,i_div,i_multi,i_divi,i_comp1,i_comp2,i_jmp,i_jalr,i_cmp,i_cmpi,i_jr,i_adply);
+type instruction_type is (i_nop,i_load,i_addi,i_dply,i_adec,i_bnz,i_bz,i_bs,i_bns,i_null,i_bnc,i_bc,i_bnv,i_bv,
+i_halt,i_add,i_sub,i_mult,i_div,i_multi,i_divi,i_comp1,i_comp2,i_jmp,i_jalr,i_cmp,i_cmpi,i_jr);
 
 signal instruction: instruction_type;
 
@@ -123,7 +123,7 @@ signal PC_multiplexor : std_logic_vector(7 downto 0);
 
 begin
 -----------IMPLEMENTACION OSCILADOR INTERNO---------------
-OSCinst0: OSCH generic map("26.60") port map('0', clk);
+--OSCinst0: OSCH generic map("26.60") port map('0', clk);
 ----------------------------------------------------------
 
 imp_binBCD: bin2bcd port map(reset,Q,Qbcd);
@@ -195,7 +195,6 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 						when "011000" =>instruction <=  i_cmp;	
 						when "011001" =>instruction	<= i_cmpi;
 						when "011010" =>instruction <= i_jr;
-						when "011011" =>instruction <= i_adply;
 						when others =>
 							instruction <= i_null;
 					end case;
@@ -485,7 +484,7 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 							end if;
 							global_state<=end_execute;
 							
-						when i_jump =>
+						when i_jmp =>
 							if(IR(17)='0') then
 								PC<=IR(7 downto 0);
 							else
@@ -548,10 +547,7 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when others =>
 									execute_instruction <= t0;
 									global_state <= end_execute;
-							end case;
-						when i_adply=>
-							Rdisplay<=Rdisplay+1;
-							global_state <= end_execute;							
+							end case;							
 						when others =>
 							global_state<=end_execute;
 					end case;
