@@ -41,6 +41,8 @@ architecture a_ROM of ROM is
 	constant OP_JALR: std_logic_vector(5 downto 0):=  "010111";
 	constant OP_CMP: std_logic_vector(5 downto 0):=   "011000";
 	constant OP_CMPI: std_logic_vector(5 downto 0):=  "011001";
+	constant OP_JR: std_logic_vector(5 downto 0):=    "011010";
+	constant OP_ADPLY: std_logic_vector(5 downto 0):= "011011";
 	
 
 	--Control RPG
@@ -54,35 +56,47 @@ architecture a_ROM of ROM is
 	--TIPO J |OP CODE(6)| DIRECCION DE MEMORIA (18)|
 	type ROM_Array is array (0 to 255) of std_logic_vector(23 downto 0);
 	constant content: ROM_Array := (
-		0 => OP_LOAD&RA&x"00F5",--LOAD 0,RA
-		1 => OP_DPLY&RA&x"0000", --DPLY RA
-		2 => OP_ADDI&RA&x"0001", --ADDI RA,1
-		3 => OP_CMPI&RA&x"001E", --CMPI RA,30
-		4 =>OP_BNZ&"10"&x"00FC",--BNZ -4
-		5 => OP_DPLY&RA&x"0000", --DPLY RA
-		
-		7 => OP_LOAD&RC&x"00F4",--LOAD j, RC
-		8 => OP_LOAD&RD&x"00F4",--LOAD j, RD
-		9 => OP_ADEC&RC&"000000000000"&"0011",
-		10 =>OP_ADEC&RD&"000000000000"&"0011",
-		11 =>OP_NOP&"000000000000000000",
-		12 =>OP_BNZ&"10"&x"00FD",
-		13 =>OP_CMPI&RC&x"0000",
-		14 =>OP_BNZ&"10"&x"00F9",
-		15 =>OP_LOAD&RB&x"00FF",--LOAD 0,RA
-		16 =>OP_DPLY&RB&x"0000", --DPLY RA
-		17 =>OP_HALT&"000000000000000000",
 		--Ecuacion a) 17X + 25Y - W/4
-		23 => OP_LOAD&RA&x"00F8",--LOAD X, RA
-		24 =>OP_MULTI&RA&x"0011",--MULTI RA,17 
-		25 => OP_LOAD&RB&x"00F9",--LOAD Y, RB
-		26 =>OP_MULTI&RB&x"0019",--MULTI RB,25 
-		27 => OP_LOAD&RC&x"00F7",--LOAD W,RC
-		28 => OP_DIVI&RC&x"0004",--DIVI RC,4 
-		29 => OP_ADD&RA&RB&RA&x"000",--ADD RA,RB,RA 
-		30 => OP_SUB&RA&RC&RA&x"000",--SUB RA,RC,RA 
-		31 => OP_DPLY&RA&x"0000",--DPLY RA
-		32 => OP_JMP&"10"&x"0007",--JMP 6
+		0 => OP_LOAD&RA&x"00F8",--LOAD X, RA
+		1 =>OP_MULTI&RA&x"0011",--MULTI RA,17 
+		2 => OP_LOAD&RB&x"00F9",--LOAD Y, RB
+		3 =>OP_MULTI&RB&x"0019",--MULTI RB,25 
+		4 => OP_LOAD&RC&x"00F7",--LOAD W,RC
+		5 => OP_DIVI&RC&x"0004",--DIVI RC,4 
+		6 => OP_ADD&RA&RB&RA&x"000",--ADD RA,RB,RA 
+		7 => OP_SUB&RA&RC&RA&x"000",--SUB RA,RC,RA 
+		8 => OP_DPLY&RA&x"0000",--DPLY RA
+		9 => OP_LOAD&RA&x"00F2",--LOAD 10,RA
+		10=> OP_LOAD&RB&x"00F1",--LOAD 24,RB
+		11=> OP_JMP&"00"&x"000C",--JMP 12
+		
+		--T=RA
+		12 => OP_ADEC&RA&"000000000000"&"0011",--DEC RA
+		--SECUENCIA PARA 1 SEGUNDO
+		13 => OP_LOAD&RC&x"00F4",--LOAD j, RC
+		14 =>OP_LOAD&RD&x"00F4",--LOAD j, RD
+		15 =>OP_ADEC&RC&"000000000000"&"0011",--DEC RC
+		16 =>OP_ADEC&RD&"000000000000"&"0011",--DEC RD
+		17 =>OP_NOP&"000000000000000000",--NOP
+		18 =>OP_BNZ&"10"&x"00FE",--BNZ -2
+		19 =>OP_CMPI&RC&x"0000",-- CMPI RC,0
+		20 =>OP_BNZ&"10"&x"00FA",--BNZ -6
+		--T=RA=0?
+		21 =>OP_CMPI&RA&x"0000",--CMPI RA,0
+		22 =>OP_BNZ&"10"&x"00F6",--BNZ -10
+		--SALTAR AL VALOR DE RB
+		23 =>OP_JR&RB&x"0000",--JR RB
+		--CONTADOR 0 A 30 
+		24 => OP_LOAD&RC&x"00F5",--LOAD 0,RC	
+		25 => OP_LOAD&RA&x"00F9",--LOAD 2,RA
+		26 => OP_LOAD&RB&x"001C",--LOAD 28,RB punto de retorno
+		27 => OP_JMP&"00"&x"000C",
+		28 => OP_DPLY&RC&x"0000", --DPLY RC
+		29 => OP_ADDI&RC&x"0001", --ADDI RC,1
+		30 => OP_CMPI&RC&x"001E", --CMPI RC,30
+		31 => OP_BNZ&"10"&x"00FC",--BNZ -4
+		32 => OP_DPLY&RC&x"0000", --DPLY RC
+		33 => OP_HALT&"000000000000000000",
 		--Ecuacion b) 10X^2 + 30X - Z/2
 		47 => OP_LOAD&RA&"00000000"&"11111000", --LOAD X, RA
 		48 => OP_LOAD&RB&"00000000"&"11111000", --LOAD X, RB
@@ -93,7 +107,8 @@ architecture a_ROM of ROM is
 		53 => OP_DIVI&RC&"000000000010"&"1110", --DIVI RC, 2 RES=Z/2
 		54 => OP_ADD&RA&RB&"0000000000"&"0110", --ADD RA + RB, RA RES=10*X*X + X*X
 		55 => OP_SUB&RA&RC&"0000000000"&"0111", --SUB RA - RC, RA RES= 10*X*X + X*X - Z/2
-
+		56 => OP_DPLY&RA&x"0000",
+ 
 		--Ecuacion c) -X^3 - 7Z +W/10
 		71 => OP_LOAD&RA&"00000000"&"11111000", --LOAD X, RA
 		72 => OP_LOAD&RB&"00000000"&"11111000", --LOAD X, RB
@@ -107,7 +122,10 @@ architecture a_ROM of ROM is
 		80 => OP_SUB&RB&RA&"0000000000"&"0111", --SUB RB - RA, RB RES= W/10 - 7*Z - X^3
 
 		--Ecuacion d) desplegar 0000 en el display
-		244 => x"00FFFF",
+		241 => x"000018",
+		242 => x"00000A",--10
+		243 => x"000004",--4
+		244 => x"0003F4",--1012   3F4
 		245 => x"000000",-- 0
 		246 => x"000003",-- 30 en decimal i
 		247 => x"000028", -- 40 en decimal W pra que sea divisible exacto del 10 y del 4
