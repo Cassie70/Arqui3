@@ -98,11 +98,11 @@ architecture a_ROM of ROM is
 		34 =>OP_JR&RB&x"0000",--JR RB
 		--CONTADOR 0 A 30 
 		43 => OP_LOAD&RD&x"00F5",--LOAD 0,RD
-		44 => OP_LOAD&RA&x"00F9",--LOAD 10,RA Segundos de espera
+		44 => OP_LOAD&RA&x"00F8",--LOAD 1,RA Segundos de espera
 		45 => OP_LOAD&RB&x"00F0",--LOAD 48,RB punto de retorno
 		46 => OP_DPLY&RD&x"0000", --DPLY RD
 		47 => OP_JMP&"00"&x"000C",-- JMP 12
-		48 => OP_LOAD&RA&x"00F9",--LOAD 1,RA Segundos de espera
+		48 => OP_LOAD&RA&x"00F8",--LOAD 1,RA Segundos de espera
 		49 => OP_LOAD&RB&x"00F0",--LOAD 48,RB punto de retorno
 		50 => OP_DPLY&RD&x"0000", --DPLY RD
 		51 => OP_ADDI&RD&x"0001", --ADDI RD,1

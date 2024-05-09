@@ -3,11 +3,11 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 ----------------------------------------------------------
---library machxo2;
---use machxo2.all; 
+library machxo2;
+use machxo2.all; 
 ----------------------------------------------------------
 entity alu_fetch is port(
-	clk : in std_logic;
+	--clk : in std_logic;
 	reset,S0,S1: in std_logic;
 	stop_run: in std_logic;
 	display: out std_logic_vector(6 downto 0);
@@ -19,12 +19,12 @@ end alu_fetch;
 
 architecture behavior of alu_fetch is
 ----------OSCILADOR INTERNO-------------------------------
-    --component OSCH
-        --generic (NOM_FREQ: string);
-        --port (STDBY: in std_logic; OSC: out std_logic);
-    --end component;
-    --attribute NOM_FREQ: string;
-    --attribute NOM_FREQ of OSCinst0: label is "26.60"; 
+    component OSCH
+        generic (NOM_FREQ: string);
+        port (STDBY: in std_logic; OSC: out std_logic);
+    end component;
+    attribute NOM_FREQ: string;
+    attribute NOM_FREQ of OSCinst0: label is "3.33"; 
 ----------------------------------------------------------
 
 	component ROM is port(
@@ -81,7 +81,7 @@ architecture behavior of alu_fetch is
 	
 	
 
---signal clk: std_logic;
+signal clk: std_logic;
 signal clk_0: std_logic:='0';
 signal clk_1: std_logic:='0';
 signal Q: std_logic_vector(13 downto 0);
@@ -123,7 +123,7 @@ signal PC_multiplexor : std_logic_vector(7 downto 0);
 
 begin
 -----------IMPLEMENTACION OSCILADOR INTERNO---------------
---OSCinst0: OSCH generic map("26.60") port map('0', clk);
+OSCinst0: OSCH generic map("3.33") port map('0', clk);
 ----------------------------------------------------------
 
 imp_binBCD: bin2bcd port map(reset,Q,Qbcd);
@@ -133,12 +133,12 @@ decenas: bcdDisplay port map(clk_0,reset,Qbcd(7 downto 4),de);
 centenas: bcdDisplay port map(clk_0,reset,Qbcd(11 downto 8),ce);
 millar: bcdDisplay port map(clk_0,reset,Qbcd(15 downto 12),mi);
 --clk
-ROM_imp: ROM port map(clk,reset,'1','1',MAR,data_bus);
-RPG : registrosPG port map(clk,reset,rpg_write,rpg_in,rpg_sel1,rpg_sel2,rpg_out1,rpg_out2);
-ALU_imp : alu port map(clk,reset,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
+ROM_imp: ROM port map(clk_1,reset,'1','1',MAR,data_bus);
+RPG : registrosPG port map(clk_1,reset,rpg_write,rpg_in,rpg_sel1,rpg_sel2,rpg_out1,rpg_out2);
+ALU_imp : alu port map(clk_1,reset,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
 Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 
-	process(clk, reset, stop_run)
+	process(clk_1, reset, stop_run)
 	begin
 		if (reset = '1') then
 			PC <= "00010111";
@@ -148,7 +148,7 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 			MBR<=(others=>'0');
 			IR<=(others=>'0');
 						
-		elsif (rising_edge(clk) and stop_run='0') then			
+		elsif (rising_edge(clk_1) and stop_run='0') then			
 			case global_state is
 				when reset_pc=>
 					global_state<=fetch;
@@ -589,16 +589,25 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 end process;
 
 process(clk, reset)
-	variable count: integer range 0 to 250000;
+	variable count: integer range 0 to 2500;
+	variable count1: integer range 0 to 25;
 	begin
 		if (reset = '1') then
 			clk_0<= '0';
+			clk_1<= '0';
 		elsif (rising_edge(clk)) then
-			if (count < 100000) then
+			if (count < 1000) then
 				count := count + 1;
 			else
 				count := 0;
 				clk_0 <= not clk_0;
+			end if;
+			
+			if (count1 < 1) then
+				count1 := count1 + 1;
+			else
+				count1 := 0;
+				clk_1 <= not clk_1;
 			end if;
 		end if;
 end process;
