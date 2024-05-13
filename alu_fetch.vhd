@@ -12,7 +12,6 @@ entity alu_fetch is port(
 	stop_run: in std_logic;
 	display: out std_logic_vector(6 downto 0);
 	signo: out std_logic;
-	Pc_directo : in std_logic;
 	sel: out std_logic_vector(3 downto 0)
 );
 end alu_fetch;
@@ -112,7 +111,7 @@ type global_state_type is (reset_pc,fetch,fetch1,fetch2,fetch3,end_fetch,decode,
 signal global_state: global_state_type;
 
 type instruction_type is (i_nop,i_load,i_addi,i_dply,i_adec,i_bnz,i_bz,i_bs,i_bns,i_null,i_bnc,i_bc,i_bnv,i_bv,
-i_halt,i_add,i_sub,i_mult,i_div,i_multi,i_divi,i_comp1,i_comp2,i_jmp,i_jalr,i_cmp,i_cmpi,i_jr);
+i_halt,i_add,i_sub,i_mult,i_div,i_multi,i_divi,i_comp1,i_comp2,i_jmp,i_loadi,i_cmp,i_cmpi,i_jr,i_ja);
 
 signal instruction: instruction_type;
 
@@ -132,22 +131,21 @@ unidades: bcdDisplay port map(clk_0,reset,Qbcd(3 downto 0),un);
 decenas: bcdDisplay port map(clk_0,reset,Qbcd(7 downto 4),de);
 centenas: bcdDisplay port map(clk_0,reset,Qbcd(11 downto 8),ce);
 millar: bcdDisplay port map(clk_0,reset,Qbcd(15 downto 12),mi);
---clk
+--clk_1
 ROM_imp: ROM port map(clk_1,reset,'1','1',MAR,data_bus);
 RPG : registrosPG port map(clk_1,reset,rpg_write,rpg_in,rpg_sel1,rpg_sel2,rpg_out1,rpg_out2);
 ALU_imp : alu port map(clk_1,reset,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
 Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
-
+--clk regresar a clk_1 cuando termine tb
 	process(clk_1, reset, stop_run)
 	begin
 		if (reset = '1') then
-			PC <= "00010111";
+			PC <= "00000000";
 			global_state <= reset_pc;
 			execute_instruction<=t0;
 			MAR<=(others=>'0');
 			MBR<=(others=>'0');
-			IR<=(others=>'0');
-						
+			IR<=(others=>'0');				
 		elsif (rising_edge(clk_1) and stop_run='0') then			
 			case global_state is
 				when reset_pc=>
@@ -177,24 +175,25 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 						when "000110" =>instruction <= i_bz;
 						when "000111" =>instruction <= i_bs;
 						when "001000" =>instruction <= i_bns;
-						when "001001" =>instruction <=  i_bnc;
-						when "001010" =>instruction <=   i_bc;
-						when "001011" =>instruction <=  i_bnv;
-						when "001100" =>instruction <=   i_bv;
+						when "001001" =>instruction <= i_bnc;
+						when "001010" =>instruction <= i_bc;
+						when "001011" =>instruction <= i_bnv;
+						when "001100" =>instruction <= i_bv;
 						when "001101" =>instruction <= i_halt;
-						when "001110" =>instruction <=  i_add;
-						when "011111" =>instruction <=  i_sub;
+						when "001110" =>instruction <= i_add;
+						when "011111" =>instruction <= i_sub;
 						when "010000" =>instruction <= i_mult;
-						when "010001" =>instruction <=  i_div;
-						when "010010" =>instruction <=i_multi;
+						when "010001" =>instruction <= i_div;
+						when "010010" =>instruction <= i_multi;
 						when "010011" =>instruction <= i_divi;
-						when "010100" =>instruction <=i_comp1;
-						when "010101" =>instruction <=i_comp2;
-						when "010110" =>instruction <=  i_jmp;
-						when "010111" =>instruction <= i_jalr;
-						when "011000" =>instruction <=  i_cmp;	
+						when "010100" =>instruction <= i_comp1;
+						when "010101" =>instruction <= i_comp2;
+						when "010110" =>instruction <= i_jmp;
+						when "010111" =>instruction <= i_loadi;
+						when "011000" =>instruction <= i_cmp;	
 						when "011001" =>instruction	<= i_cmpi;
 						when "011010" =>instruction <= i_jr;
+						when "011011" =>instruction <= i_ja;
 						when others =>
 							instruction <= i_null;
 					end case;
@@ -224,6 +223,24 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 									execute_instruction<=t4;
 								when t4 =>
 									rpg_write<='0';
+									execute_instruction<=t0;
+									global_state<=end_execute;
+							end case;
+							
+						when i_loadi =>
+							case execute_instruction is 
+								when t0 =>
+									execute_instruction<=t1;
+								when t1 =>
+									rpg_write<='1';
+									rpg_sel1<=IR(17 downto 16);
+									rpg_in<="00000000"&IR(15 downto 0);
+									execute_instruction<=t2;
+								when t2 =>
+									rpg_write<='0';
+									execute_instruction<=t0;
+									global_state<=end_execute;
+								when others =>
 									execute_instruction<=t0;
 									global_state<=end_execute;
 							end case;
@@ -362,17 +379,14 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 									rpg_sel2 <=IR(15 downto 14);
 									execute_instruction <= t2;
 								when t2 =>
-									control <= IR(3 downto 0);
-									A<="00000000"&rpg_out1(7 downto 0); --DUDA TAMAÑO RPG
-									B<="00000000"&rpg_out2(7 downto 0); --DUDA TAMAÑO RPG
+									rpg_sel1 <= IR(13 downto 12);
+									control <= "1101";
+									A<=rpg_out1(15 downto 0); 
+									B<=rpg_out2(15 downto 0);
 									execute_instruction <= t3;
 								when t3 =>
 									rpg_write<='1';
-									if(C = '1') then
-										rpg_in<="0000000"&C&ACC;
-									else
-										rpg_in<="00000000"&ACC;
-									end if;
+									rpg_in<="00000000"&ACC;
 									execute_instruction <= t4;
 								when t4 =>
 									rpg_write <= '0';
@@ -448,7 +462,7 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								if(IR(17)='0') then
 									PC<=IR(7 downto 0);
 								else
-									PC<=PC+IR(7 downto 0);
+									PC<=PC+IR(7 downto 0)-1;
 								end if;
 								global_state<=end_execute;
 							else
@@ -459,7 +473,7 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								if(IR(17)='0') then
 									PC<=IR(7 downto 0);
 								else
-									PC<=PC+IR(7 downto 0);
+									PC<=PC+IR(7 downto 0)-1;
 								end if;
 								global_state<=end_execute;
 							else
@@ -470,25 +484,21 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								if(IR(17)='0') then
 									PC<=IR(7 downto 0);
 								else
-									PC<=PC+IR(7 downto 0);
+									PC<=PC+IR(7 downto 0)-1;
 								end if;
 								global_state<=end_execute;
 							else
 								global_state<=end_execute;
 							end if;
 						when i_halt =>
-							if(Pc_directo = '1') then
-								Pc <= PC_multiplexor;
-							else
-								PC<=PC-1;
-							end if;
+							PC<=PC-1;
 							global_state<=end_execute;
 							
 						when i_jmp =>
 							if(IR(17)='0') then
 								PC<=IR(7 downto 0);
 							else
-								PC<=PC+IR(7 downto 0);
+								PC<=PC+IR(7 downto 0)-1;
 							end if;
 							global_state<=end_execute;
 
@@ -547,7 +557,18 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								when others =>
 									execute_instruction <= t0;
 									global_state <= end_execute;
-							end case;							
+							end case;
+						when i_ja =>
+							if(S = '0' and Z = '0') then
+								if(IR(17)='0') then
+									PC<=IR(7 downto 0);
+								else
+									PC<=PC+IR(7 downto 0)-1;
+								end if;
+								global_state<=end_execute;
+							else
+								global_state<=end_execute;
+							end if;							
 						when others =>
 							global_state<=end_execute;
 					end case;
@@ -556,6 +577,8 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 				when others =>
 					global_state<=reset_pc;
 			end case;
+		elsif(stop_run = '1') then
+			PC<= PC_multiplexor;
 		end if;
 	end process;
 

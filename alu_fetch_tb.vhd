@@ -12,7 +12,6 @@ architecture test of alu_fetch_tb is
 		stop_run: in std_logic;
 		display: out std_logic_vector(6 downto 0);
 		signo: out std_logic;
-		Pc_directo : in std_logic;
 		sel: out std_logic_vector(3 downto 0)
 	);
 	end component;
@@ -21,16 +20,15 @@ architecture test of alu_fetch_tb is
 	signal clk_t: std_logic := '0';  -- Señal de reloj agregada
     signal reset_t: std_logic := '0';
 	signal signo_t: std_logic := '0';
-	signal S0_t: std_logic := '0';
-	signal S1_t: std_logic := '0';
-	signal Pc_directo_t: std_logic:= '0';
-    signal stop_run_t: std_logic := '0';
+	signal S0_t: std_logic := '1';
+	signal S1_t: std_logic := '1';
+    signal stop_run_t: std_logic := '1';
     signal display_t: std_logic_vector(6 downto 0) := "0000000";
     signal sel_t: std_logic_vector(3 downto 0) := "0000";
 begin
 
     -- Instancia del componente alu_fetch
-    prueba: alu_fetch port map(clk_t,reset_t,S0_t,S1_t,stop_run_t,display_t,signo_t,Pc_directo_t,sel_t);
+    prueba: alu_fetch port map(clk_t,reset_t,S0_t,S1_t,stop_run_t,display_t,signo_t,sel_t);
 
     -- Proceso para generar la señal de reloj
     clk_process: process

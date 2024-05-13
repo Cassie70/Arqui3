@@ -26,14 +26,14 @@ selector <=S0&S1;
 process(selector)
 begin 
 	case selector is
-		when "00" => --23
-			PcOut <= "00010111";
-		when "01" =>--47
-			PcOut <= "00101111";
-		when "10" =>--71
-			PcOut <= "01000111";
-		when others =>--95
-			PcOut <= "01011111";
+		when "00" => --0
+			PcOut <= "00000000";
+		when "01" =>--96
+			PcOut <= "01100000";
+		when "10" =>--108
+			PcOut <= "01101100";
+		when others =>--120
+			PcOut <= "01111000";
 	end case;
 end process;
 

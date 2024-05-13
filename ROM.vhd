@@ -38,11 +38,11 @@ architecture a_ROM of ROM is
 	constant OP_COMP1: std_logic_vector(5 downto 0):= "010100";
 	constant OP_COMP2: std_logic_vector(5 downto 0):= "010101";
 	constant OP_JMP: std_logic_vector(5 downto 0):=   "010110";
-	constant OP_JALR: std_logic_vector(5 downto 0):=  "010111";
+	constant OP_LOADI: std_logic_vector(5 downto 0):=  "010111";
 	constant OP_CMP: std_logic_vector(5 downto 0):=   "011000";
 	constant OP_CMPI: std_logic_vector(5 downto 0):=  "011001";
 	constant OP_JR: std_logic_vector(5 downto 0):=    "011010";
-	
+	constant OP_JA: std_logic_vector(5 downto 0):=    "011011";
 
 	--Control RPG
 	constant RA: std_logic_vector(1 downto 0):= "00";
@@ -65,21 +65,21 @@ architecture a_ROM of ROM is
 		6 => OP_ADD&RA&RB&RA&x"000",--ADD RA,RB,RA 
 		7 => OP_SUB&RA&RC&RA&x"000",--SUB RA,RC,RA 
 		8 => OP_DPLY&RA&x"0000",--DPLY RA
-		9 => OP_LOAD&RA&x"00F2",--LOAD 10,RA
-		10=> OP_LOAD&RB&x"00F1",--LOAD 43,RB
-		11=> OP_JMP&"00"&x"000C",--JMP 12
-		
+		--ASIGNAR TIEMPO T 
+		9 =>OP_CMPI&RA&x"0064", --CMPI RA,100
+		10=>OP_BNS&"00"&x"0034", --BNS T=2  RA>=100
+		11=>OP_CMPI&RA&x"003C", --CMPI RA,60
+		12=>OP_BNS&"00"&x"003F",--BS T=3  RA>=60
+		13=>OP_CMPI&RA&x"0019", --CMPI RA,25
+		14=>OP_JA&"00"&x"004A", --JA T=4 RA>25
+		15=>OP_CMPI&RA&x"0000", --CMPI RA,0
+		16=>OP_BNS&"00"&x"0029", --BNS T=1 RA>=0
+		17=>OP_JMP&"00"&x"0055",-- JMP T=5 RA<0
 		--T=RA
-		12 => OP_ADEC&RA&"000000000000"&"0011",--DEC RA
+		18 => OP_ADEC&RA&"000000000000"&"0011",--DEC RA
 		--SECUENCIA PARA 1 SEGUNDO
-		13 =>OP_LOAD&RC&x"00F4",--LOAD j, RC
-		14 =>OP_ADEC&RC&"000000000000"&"0011",--DEC RC
-		15 =>OP_NOP&"000000000000000000",--NOP
-		16 =>OP_NOP&"000000000000000000",--NOP
-		17 =>OP_NOP&"000000000000000000",--NOP
-		18 =>OP_NOP&"000000000000000000",--NOP
-		19 =>OP_NOP&"000000000000000000",--NOP
-		20 =>OP_NOP&"000000000000000000",--NOP
+		19 =>OP_LOADI&RC&x"FFFF",--LOADI FFFF, RC
+		20 =>OP_ADEC&RC&"000000000000"&"0011",--DEC RC
 		21 =>OP_NOP&"000000000000000000",--NOP
 		22 =>OP_NOP&"000000000000000000",--NOP
 		23 =>OP_NOP&"000000000000000000",--NOP
@@ -90,54 +90,122 @@ architecture a_ROM of ROM is
 		28 =>OP_NOP&"000000000000000000",--NOP
 		29 =>OP_NOP&"000000000000000000",--NOP
 		30 =>OP_NOP&"000000000000000000",--NOP
-		31 =>OP_BNZ&"10"&x"00EF",--BNZ -17
+		31 =>OP_NOP&"000000000000000000",--NOP
+		32 =>OP_NOP&"000000000000000000",--NOP
+		33 =>OP_NOP&"000000000000000000",--NOP
+		34 =>OP_NOP&"000000000000000000",--NOP
+		35 =>OP_NOP&"000000000000000000",--NOP
+		36 =>OP_NOP&"000000000000000000",--NOP
+		37 =>OP_BNZ&"10"&x"00EF",--BNZ -17  RC != 0
 		--T=RA=0?
-		32 =>OP_CMPI&RA&x"0000",--CMPI RA,0
-		33 =>OP_BNZ&"10"&x"00EB",--BNZ -21
+		38 =>OP_CMPI&RA&x"0000",--CMPI RA,0
+		39 =>OP_BNZ&"10"&x"00EB",--BNZ -21  T !=0
 		--SALTAR AL VALOR DE RB
-		34 =>OP_JR&RB&x"0000",--JR RB
-		--CONTADOR 0 A 30 
-		43 => OP_LOAD&RD&x"00F5",--LOAD 0,RD
-		44 => OP_LOAD&RA&x"00F8",--LOAD 1,RA Segundos de espera
-		45 => OP_LOAD&RB&x"00F0",--LOAD 48,RB punto de retorno
+		40 =>OP_JR&RB&x"0000",--JR RB
+		
+		-- T= 1
+		--10 segundos de espera
+		41 => OP_LOAD&RA&x"00F2",--LOADI T segundos,RA
+		42 => OP_LOADI&RB&x"002D",-- LOADI 45 punto de retorno,RB
+		43 => OP_LOADI&RD&x"0000",-- LOADI 0,RD
+		44 => OP_JMP&"00"&x"0012",-- JMP 18
+		-- T= 1
+		45 => OP_LOADI&RA&x"0001",--LOADI 1,RA Segundos de espera
 		46 => OP_DPLY&RD&x"0000", --DPLY RD
-		47 => OP_JMP&"00"&x"000C",-- JMP 12
-		48 => OP_LOAD&RA&x"00F8",--LOAD 1,RA Segundos de espera
-		49 => OP_LOAD&RB&x"00F0",--LOAD 48,RB punto de retorno
+		47 => OP_ADDI&RD&x"0001", --ADDI RD,1
+		48 => OP_CMPI&RD&x"001E", --CMPI RD,30
+		49 => OP_BNZ&"10"&x"00FB",--BNZ -5
 		50 => OP_DPLY&RD&x"0000", --DPLY RD
-		51 => OP_ADDI&RD&x"0001", --ADDI RD,1
-		52 => OP_CMPI&RD&x"001E", --CMPI RD,30
-		53 => OP_BNZ&"10"&x"00FA",--BNZ -6
-		54 => OP_DPLY&RD&x"0000", --DPLY RD
-		55 => OP_HALT&"000000000000000000",
+		51 => OP_HALT&"000000000000000000",
+		-- T= 2
+		--10 segundos de espera
+		52 => OP_LOAD&RA&x"00F2",--LOADI T segundos,RA
+		53 => OP_LOADI&RB&x"0038",-- LOADI 56 punto de retorno,RB 
+		54 => OP_LOADI&RD&x"0000",-- LOADI 0,RD
+		55 => OP_JMP&"00"&x"0012",-- JMP 18
+		-- T= 2
+		56 => OP_LOADI&RA&x"0002",--LOADI 2,RA Segundos de espera
+		57 => OP_DPLY&RD&x"0000", --DPLY RD
+		58 => OP_ADDI&RD&x"0001", --ADDI RD,1
+		59 => OP_CMPI&RD&x"001E", --CMPI RD,30
+		60 => OP_BNZ&"10"&x"00FB",--BNZ -5
+		61 => OP_DPLY&RD&x"0000", --DPLY RD
+		62 => OP_HALT&"000000000000000000",
+		-- T= 3
+		--10 segundos de espera
+		63 => OP_LOAD&RA&x"00F2",--LOADI T segundos,RA
+		64 => OP_LOADI&RB&x"0043",-- LOADI 67 punto de retorno,RB 
+		65 => OP_LOADI&RD&x"0000",-- LOADI 0,RD
+		66 => OP_JMP&"00"&x"0012",-- JMP 18
+		-- T= 3
+		67 => OP_LOADI&RA&x"0003",--LOADI 3,RA Segundos de espera
+		68 => OP_DPLY&RD&x"0000", --DPLY RD
+		69 => OP_ADDI&RD&x"0001", --ADDI RD,1
+		70 => OP_CMPI&RD&x"001E", --CMPI RD,30
+		71 => OP_BNZ&"10"&x"00FB",--BNZ -5
+		72 => OP_DPLY&RD&x"0000", --DPLY RD
+		73 => OP_HALT&"000000000000000000",
+		-- T= 4
+		--10 segundos de espera
+		74 => OP_LOAD&RA&x"00F2",--LOADI T segundos,RA
+		75 => OP_LOADI&RB&x"004E",-- LOADI 78 punto de retorno,RB
+		76 => OP_LOADI&RD&x"0000",-- LOADI 0,RD		
+		77 => OP_JMP&"00"&x"0012",-- JMP 18
+		-- T= 4
+		78 => OP_LOADI&RA&x"0004",--LOADI 1,RA Segundos de espera
+		79 => OP_DPLY&RD&x"0000", --DPLY RD
+		80 => OP_ADDI&RD&x"0001", --ADDI RD,1
+		81 => OP_CMPI&RD&x"001E", --CMPI RD,30
+		82 => OP_BNZ&"10"&x"00FB",--BNZ -5
+		83 => OP_DPLY&RD&x"0000", --DPLY RD
+		84 => OP_HALT&"000000000000000000",
+		-- T= 5
+		--10 segundos de espera
+		85 => OP_LOAD&RA&x"00F2",--LOADI T segundos,RA
+		86 => OP_LOADI&RB&x"0059",-- LOADI 89 punto de retorno,RB
+		87 => OP_LOADI&RD&x"0000",-- LOADI 0,RD		
+		88 => OP_JMP&"00"&x"0012",-- JMP 18
+		-- T= 5
+		89 => OP_LOADI&RA&x"0005",--LOADI 1,RA Segundos de espera
+		90 => OP_DPLY&RD&x"0000", --DPLY RD
+		91 => OP_ADDI&RD&x"0001", --ADDI RD,1
+		92 => OP_CMPI&RD&x"001E", --CMPI RD,30
+		93 => OP_BNZ&"10"&x"00FB",--BNZ -5
+		94 => OP_DPLY&RD&x"0000", --DPLY RD
+		95 => OP_HALT&"000000000000000000",
+		
 		--Ecuacion b) 10X^2 + 30X - Z/2
-		--53 => OP_LOAD&RA&"00000000"&"11111000", --LOAD X, RA
-		--54 => OP_LOAD&RB&"00000000"&"11111000", --LOAD X, RB
-		--55 => OP_MULT&RA&RB&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X
-		--56 => OP_MULTI&RA&"000000001010"&"1101", --MULTI RA, 10 RES=10*X*X
-		--57 => OP_MULTI&RB&"000000011110"&"1101", --MULTI RB, 30 RES=30*X
-		--58 => OP_LOAD&RC&"00000000"&"11111010", --LOAD Z, RC
-		--59 => OP_DIVI&RC&"000000000010"&"1110", --DIVI RC, 2 RES=Z/2
-		--60 => OP_ADD&RA&RB&"0000000000"&"0110", --ADD RA + RB, RA RES=10*X*X + X*X
-		--61 => OP_SUB&RA&RC&"0000000000"&"0111", --SUB RA - RC, RA RES= 10*X*X + X*X - Z/2
-		--62 => OP_DPLY&RA&x"0000",
- 
+		96 => OP_LOAD&RA&x"00F8", --LOAD X,RA
+		97 => OP_LOAD&RB&x"00F8", --LOAD X,RB
+		98 => OP_MULT&RA&RB&RA&x"000",--MULT RA,RB,RA
+		99 => OP_MULTI&RA&x"000A", --MULTI RA,10
+		100=> OP_LOAD&RB&x"00F8", --LOAD X,RB
+		101=> OP_MULTI&RB&x"0020",--MULTI RB,30
+		102=> OP_LOAD&RC&x"00FA", --LOAD Z,RC
+		103=> OP_DIVI&RC&x"0002", --DIVI RC,2
+		104=> OP_ADD&RA&RB&RA&x"000",--ADD RA,RB,RA
+		105=> OP_SUB&RA&RC&RA&x"000",--SUB RA,RC,RA
+		106=> OP_DPLY&RA&x"0000",--DPLY RA
+		107=> OP_JMP&"00"&x"0009",
 		--Ecuacion c) -X^3 - 7Z +W/10
-		71 => OP_LOAD&RA&"00000000"&"11111000", --LOAD X, RA
-		72 => OP_LOAD&RB&"00000000"&"11111000", --LOAD X, RB
-		73 => OP_MULT&RA&RB&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X
-		74 => OP_MULT&RA&RB&"0000000000"&"1101", --MULT RA * RA, RA RES=X*X*X
-		75 => OP_LOAD&RC&"00000000"&"11111010", --LOAD Z, RC
-		76 => OP_MULTI&RC&"000000000111"&"1101", --MULTI RC, 7 RES=7*Z
-		77 => OP_LOAD&RB&"00000000"&"11110111", --LOAD W, RC
-		78 => OP_DIVI&RB&"000000001010"&"1110", --DIVI RB, 10 RES=W/10
-		79 => OP_SUB&RB&RC&"0000000000"&"0111", --SUB RB - RC, RB=W/10 - 7*Z
-		80 => OP_SUB&RB&RA&"0000000000"&"0111", --SUB RB - RA, RB RES= W/10 - 7*Z - X^3
-
+		108 => OP_LOAD&RA&x"00F8", --LOAD X,RA
+		109 => OP_LOAD&RB&x"00F8", --LOAD X,RB
+		110 => OP_MULT&RA&RB&RA&x"000",--MULT RA,RB,RA
+		111 => OP_MULT&RA&RB&RA&x"000",--MULT RA,RB,RA
+		112 => OP_LOAD&RB&x"00FA", --LOAD Z,RB
+		113 => OP_MULTI&RB&x"0007",--MULTI RB,7
+		114 => OP_LOAD&RC&x"00F7", --LOAD W,RC
+		115 => OP_DIVI&RC&x"000A", --DIVI RC,10
+		116 => OP_SUB&RC&RB&RB&x"000", --SUB RC,RB,RB
+		117 => OP_SUB&RB&RA&RA&x"000", --SUB RB,RA,RA
+		118=> OP_DPLY&RA&x"0000",--DPLY RA
+		119=> OP_JMP&"00"&x"0009",
 		--Ecuacion d) desplegar 0000 en el display
-		240 => x"000030",
+		120=> OP_LOAD&RA&x"00F5",
+		121=> OP_DPLY&RA&x"0000",--DPLY RA
+		122=> OP_HALT&"000000000000000000",
 		241 => x"00002B",
-		242 => x"00000A",--10
+		242 => x"00000A",-- T 10
 		243 => x"000004",--4
 		244 => x"00FFFF",-- j
 		245 => x"000000",-- 0
@@ -150,7 +218,7 @@ architecture a_ROM of ROM is
 		252 => x"000007", -- 7 en decimal N 
 		253 => x"000017", -- 23 en decimal O 
 		254 => x"000037", -- 55 en decimal P 
-		255 => x"00004D", -- 77 en decimal Q
+		255 => OP_HALT&"000000000000000000", --INICIO DEL PC
 		others => x"000000"
 	);
 begin
