@@ -25,7 +25,6 @@ architecture a_divi8 of divi8 is
     end component;
 
 	signal A_temp,B_temp: std_logic_vector(15 downto 0);
-	signal last_A,last_B,last_result: std_logic_vector(7 downto 0);
 	signal Res: std_logic_vector(15 downto 0);
 	signal count,count_temp: std_logic_vector(15 downto 0);
 	constant one: std_logic_vector(15 downto 0):= "0000000000000001";
@@ -48,8 +47,6 @@ process(clk)
 					end_flag<='0';
 					A_temp <= "00000000"&A;
 					B_temp <= "00000000"&B;
-					last_A <= A;
-					last_B <= B;
 					count_temp<= (others=>'0');
 					state <= t1;
 				when t1 =>
@@ -63,20 +60,14 @@ process(clk)
 				when t2 =>
 					if(Res(15) = '0') then
 						result<=count(7 downto 0);
-						last_result<=count(7 downto 0);
 					else
 						result<=count_temp(7 downto 0);
-						last_result<=count_temp(7 downto 0);
 					end if;
 					end_flag<='1';
 					state <= finish;
 				when finish =>
-					if(last_A = A and last_B = B ) then
-						result<=last_result;
-						state <= finish;
-					else
-						state <= t0;
-					end if;
+					state <= finish;
+					end_flag <= '0';
 			end case;
 		end if;
 end process;

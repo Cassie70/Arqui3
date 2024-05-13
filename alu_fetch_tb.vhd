@@ -21,8 +21,8 @@ architecture test of alu_fetch_tb is
     signal reset_t: std_logic := '0';
 	signal signo_t: std_logic := '0';
 	signal S0_t: std_logic := '1';
-	signal S1_t: std_logic := '1';
-    signal stop_run_t: std_logic := '1';
+	signal S1_t: std_logic := '0';
+    signal stop_run_t: std_logic := '0';
     signal display_t: std_logic_vector(6 downto 0) := "0000000";
     signal sel_t: std_logic_vector(3 downto 0) := "0000";
 begin
@@ -42,10 +42,16 @@ begin
         wait;  -- Detiene la simulación después de 50 ciclos
     end process clk_process;
 
-    -- Proceso de prueba para ALU (puedes agregar acciones aquí si necesitas)
+
     alu_test: process
     begin
-        -- Acciones de prueba de la ALU
+		wait for 20000 ps;
+		reset_t<= '1';
+		wait for 20000 ps;
+		S0_t<='0';
+		S1_t<='1';
+		wait for 20000 ps;
+		reset_t <= '0';
         wait;
     end process alu_test;
 

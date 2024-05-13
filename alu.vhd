@@ -51,7 +51,7 @@ architecture a_alu of alu is
 	signal div_result: std_logic_vector(7 downto 0);
 	signal all_results: std_logic_vector(15 downto 0);
 	signal A_temp,B_temp: std_logic_vector(15 downto 0);
-	signal en_div: std_logic:='0';
+	signal en_div: std_logic;
 
 begin
 	imp_add_sub_12: SumRest16Bits port map(A_temp,B_temp,'0',substract,sum_result,C);

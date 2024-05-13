@@ -106,7 +106,7 @@ signal rpg_write: std_logic:='0';
 signal A,B: std_logic_vector(15 downto 0);
 signal control: std_logic_vector(3 downto 0);
 signal C,Z,S,V,end_div: std_logic;
-
+signal reset_div: std_logic:='0';
 type global_state_type is (reset_pc,fetch,fetch1,fetch2,fetch3,end_fetch,decode,end_decode, execute,end_execute); 
 signal global_state: global_state_type;
 
@@ -134,13 +134,17 @@ millar: bcdDisplay port map(clk_0,reset,Qbcd(15 downto 12),mi);
 --clk_1
 ROM_imp: ROM port map(clk_1,reset,'1','1',MAR,data_bus);
 RPG : registrosPG port map(clk_1,reset,rpg_write,rpg_in,rpg_sel1,rpg_sel2,rpg_out1,rpg_out2);
-ALU_imp : alu port map(clk_1,reset,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
+ALU_imp : alu port map(clk_1,reset_div,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
 Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 --clk regresar a clk_1 cuando termine tb
-	process(clk_1, reset, stop_run)
+	process(clk_1, reset, stop_run,PC_multiplexor,s0,s1)
 	begin
 		if (reset = '1') then
-			PC <= "00000000";
+			if(S0 = '1' and S1 = '1') then 
+				PC<= "00000000";
+			else
+				PC<=PC_multiplexor;
+			end if;
 			global_state <= reset_pc;
 			execute_instruction<=t0;
 			MAR<=(others=>'0');
@@ -294,8 +298,10 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 						when i_divi => 
 							case execute_instruction is 
 								when t0 =>
+									reset_div<='1';
 									execute_instruction<=t1;
 								when t1 =>
+									reset_div<='0';
 									rpg_sel1<=IR(17 downto 16);
 									execute_instruction <= t2;
 								when t2 =>
@@ -491,7 +497,11 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								global_state<=end_execute;
 							end if;
 						when i_halt =>
-							PC<=PC-1;
+							if(S0 = '1' and S1 = '1') then 
+								PC<=PC-1;
+							else
+								PC<=PC_multiplexor;
+							end if;
 							global_state<=end_execute;
 							
 						when i_jmp =>
@@ -577,8 +587,6 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 				when others =>
 					global_state<=reset_pc;
 			end case;
-		elsif(stop_run = '1') then
-			PC<= PC_multiplexor;
 		end if;
 	end process;
 
