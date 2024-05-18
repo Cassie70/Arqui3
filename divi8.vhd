@@ -37,6 +37,7 @@ process(clk)
 	begin
 		if enable = '0' then
 			result<=(others=>'Z');
+			state <= t0;
 		elsif reset = '1' then
 			result <= (others=>'0');
 			state <= t0;
@@ -48,6 +49,7 @@ process(clk)
 					A_temp <= "00000000"&A;
 					B_temp <= "00000000"&B;
 					count_temp<= (others=>'0');
+					result<=(others=>'0');
 					state <= t1;
 				when t1 =>
 					if(Res(7 downto 0) = "00000000" or Res(15) = '1') then
@@ -56,6 +58,7 @@ process(clk)
 						A_temp <= Res;
 						count_temp<=count;
 						state <= t1;
+						result<=count(7 downto 0);
 					end if;
 				when t2 =>
 					if(Res(15) = '0') then

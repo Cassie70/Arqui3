@@ -3,11 +3,11 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 ----------------------------------------------------------
-library machxo2;
-use machxo2.all; 
+--library machxo2;
+--use machxo2.all; 
 ----------------------------------------------------------
 entity alu_fetch is port(
-	--clk : in std_logic;
+	clk : in std_logic;
 	reset,S0,S1: in std_logic;
 	stop_run: in std_logic;
 	display: out std_logic_vector(6 downto 0);
@@ -18,12 +18,12 @@ end alu_fetch;
 
 architecture behavior of alu_fetch is
 ----------OSCILADOR INTERNO-------------------------------
-    component OSCH
-        generic (NOM_FREQ: string);
-        port (STDBY: in std_logic; OSC: out std_logic);
-    end component;
-    attribute NOM_FREQ: string;
-    attribute NOM_FREQ of OSCinst0: label is "3.33"; 
+    --component OSCH
+        --generic (NOM_FREQ: string);
+        --port (STDBY: in std_logic; OSC: out std_logic);
+    --end component;
+    --attribute NOM_FREQ: string;
+    --attribute NOM_FREQ of OSCinst0: label is "3.33"; 
 ----------------------------------------------------------
 
 	component ROM is port(
@@ -80,7 +80,7 @@ architecture behavior of alu_fetch is
 	
 	
 
-signal clk: std_logic;
+--signal clk: std_logic;
 signal clk_0: std_logic:='0';
 signal clk_1: std_logic:='0';
 signal Q: std_logic_vector(13 downto 0);
@@ -122,7 +122,7 @@ signal PC_multiplexor : std_logic_vector(7 downto 0);
 
 begin
 -----------IMPLEMENTACION OSCILADOR INTERNO---------------
-OSCinst0: OSCH generic map("3.33") port map('0', clk);
+--OSCinst0: OSCH generic map("3.33") port map('0', clk);
 ----------------------------------------------------------
 
 imp_binBCD: bin2bcd port map(reset,Q,Qbcd);
