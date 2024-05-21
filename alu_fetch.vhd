@@ -126,8 +126,7 @@ ROM_imp: ROM port map(clk_1,reset,'1','1',MAR,data_bus);
 RPG : registrosPG port map(clk_1,reset,rpg_write,rpg_in,rpg_sel1,rpg_sel2,rpg_out1,rpg_out2);
 ALU_imp : alu port map(clk_1,reset_div,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
 
-
-	process(clk_1, reset, stop_run,s0,s1)
+process(clk_1, reset, stop_run)
 	begin
 		if (reset = '1') then
 			PC<= PC_mux;
@@ -572,9 +571,8 @@ ALU_imp : alu port map(clk_1,reset_div,A,B,control,ACC(15 downto 0),C,Z,S,V,end_
 		end if;
 	end process;
 
-	Q<=Rdisplay;
-	
-	process(clk_0, reset)
+	Q<=Rdisplay;	
+process(clk_0, reset)
 	begin
 		if (reset = '1') then
 			temp_control <= "0000";
@@ -601,6 +599,7 @@ ALU_imp : alu port map(clk_1,reset_div,A,B,control,ACC(15 downto 0),C,Z,S,V,end_
 		end if;
 end process;
 
+
 process(clk, reset)
 	variable count: integer range 0 to 2500;
 	variable count1: integer range 0 to 25;
@@ -624,6 +623,8 @@ process(clk, reset)
 			end if;
 		end if;
 end process;
+
+
 
 process(SW)
     begin
