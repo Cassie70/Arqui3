@@ -3,13 +3,13 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 ----------------------------------------------------------
---library machxo2;
---use machxo2.all; 
+library machxo2;
+use machxo2.all; 
 ----------------------------------------------------------
 entity alu_fetch is port(
-	clk : in std_logic;
-	reset,S0,S1: in std_logic;
+	reset: in std_logic;
 	stop_run: in std_logic;
+	SW: in std_logic_vector(1 downto 0);
 	display: out std_logic_vector(6 downto 0);
 	signo: out std_logic;
 	sel: out std_logic_vector(3 downto 0)
@@ -18,14 +18,14 @@ end alu_fetch;
 
 architecture behavior of alu_fetch is
 ----------OSCILADOR INTERNO-------------------------------
-    --component OSCH
-        --generic (NOM_FREQ: string);
-        --port (STDBY: in std_logic; OSC: out std_logic);
-    --end component;
-    --attribute NOM_FREQ: string;
-    --attribute NOM_FREQ of OSCinst0: label is "3.33"; 
+    component OSCH
+        generic (NOM_FREQ: string);
+        port (STDBY: in std_logic; OSC: out std_logic);
+    end component;
+    
+    attribute NOM_FREQ: string;
+    attribute NOM_FREQ of OSCinst0: label is "3.02";
 ----------------------------------------------------------
-
 	component ROM is port(
 		clk: in std_logic;
 		clr: in std_logic;
@@ -71,16 +71,7 @@ architecture behavior of alu_fetch is
 		C,Z,S,V,end_div: out std_logic);
 	end component;
 	
-	component MultiplexorGeneral is port(
-	S0: in std_logic;
-	S1: in std_logic;
-	PcOut: out std_logic_vector(7 downto 0)
-	);
-	end component;
-	
-	
-
---signal clk: std_logic;
+signal clk: std_logic;
 signal clk_0: std_logic:='0';
 signal clk_1: std_logic:='0';
 signal Q: std_logic_vector(13 downto 0);
@@ -89,11 +80,12 @@ signal temp_control: std_logic_vector(3 downto 0);
 signal un,de,ce,mi: std_logic_vector(6 downto 0);
 signal Rdisplay: std_logic_vector(13 downto 0);
 --REGISTROS PARA DATAPATH--
-signal PC: std_logic_vector(7 downto 0):="00000000";
+signal PC: std_logic_vector(7 downto 0):=(others=>'0');
+signal PC_mux : std_logic_vector(7 downto 0):=(others=>'0');
 signal MAR: std_logic_vector(7 downto 0):=(others=>'0');
-signal MBR: std_logic_vector(23 downto 0);
-signal IR: std_logic_vector(23 downto 0);
-signal ACC: std_logic_vector(15 downto 0);
+signal MBR: std_logic_vector(23 downto 0):=(others=>'0');
+signal IR: std_logic_vector(23 downto 0):=(others=>'0');
+signal ACC: std_logic_vector(15 downto 0):=(others=>'0');
 
 --entradas,salidas componentes
 signal data_bus: std_logic_vector(23 downto 0);
@@ -118,13 +110,11 @@ signal instruction: instruction_type;
 type execute_instruction_type is(t0,t1,t2,t3,t4);
 signal execute_instruction: execute_instruction_type;
 
-signal PC_multiplexor : std_logic_vector(7 downto 0);
 
 begin
 -----------IMPLEMENTACION OSCILADOR INTERNO---------------
---OSCinst0: OSCH generic map("3.33") port map('0', clk);
+OSCinst0: OSCH generic map("3.02") port map('0', clk);
 ----------------------------------------------------------
-
 imp_binBCD: bin2bcd port map(reset,Q,Qbcd);
 --clk_0
 unidades: bcdDisplay port map(clk_0,reset,Qbcd(3 downto 0),un);
@@ -135,16 +125,12 @@ millar: bcdDisplay port map(clk_0,reset,Qbcd(15 downto 12),mi);
 ROM_imp: ROM port map(clk_1,reset,'1','1',MAR,data_bus);
 RPG : registrosPG port map(clk_1,reset,rpg_write,rpg_in,rpg_sel1,rpg_sel2,rpg_out1,rpg_out2);
 ALU_imp : alu port map(clk_1,reset_div,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
-Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
---clk regresar a clk_1 cuando termine tb
-	process(clk_1, reset, stop_run,PC_multiplexor,s0,s1)
+
+
+	process(clk_1, reset, stop_run,s0,s1)
 	begin
 		if (reset = '1') then
-			if(S0 = '1' and S1 = '1') then 
-				PC<= "00000000";
-			else
-				PC<=PC_multiplexor;
-			end if;
+			PC<= PC_mux;
 			global_state <= reset_pc;
 			execute_instruction<=t0;
 			MAR<=(others=>'0');
@@ -283,8 +269,8 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 									execute_instruction <= t2;
 								when t2 =>
 									control <= "1101";
-									A <= rpg_out1(15 downto 0); --DUDA, el cambio de 15 downto 0 en lugar de 11 downto 0 se queda?
-									B <= IR(15 downto 0); --DUDA tamaño RPG (10 downto 4 -> 8 bits de multiplicacion)
+									A <= rpg_out1(15 downto 0); 
+									B <= IR(15 downto 0);
 									execute_instruction <= t3;
 								when t3 =>
 									rpg_write<='1';
@@ -306,8 +292,8 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 									execute_instruction <= t2;
 								when t2 =>
 									control <= "1110";
-									A <= rpg_out1(15 downto 0); -- A es entrada de 16 bits a la alu obtenemos el valor que vamos a dividir
-									B <= IR(15 downto 0); --obtenemos el divisor de la instruccion, tiene que ser de 8 bits
+									A <= rpg_out1(15 downto 0); 
+									B <= IR(15 downto 0); 
 									if(end_div = '1') then
 										execute_instruction <= t3;
 									else
@@ -497,11 +483,7 @@ Multiplexor : MultiplexorGeneral port map(S0,S1,PC_multiplexor);
 								global_state<=end_execute;
 							end if;
 						when i_halt =>
-							if(S0 = '1' and S1 = '1') then 
-								PC<=PC-1;
-							else
-								PC<=PC_multiplexor;
-							end if;
+							PC<=PC-1;
 							global_state<=end_execute;
 							
 						when i_jmp =>
@@ -642,4 +624,21 @@ process(clk, reset)
 			end if;
 		end if;
 end process;
+
+process(SW)
+    begin
+        case SW is
+            when "00" =>
+                PC_mux <= x"00";
+            when "01" =>
+                PC_mux <= x"60"; 
+            when "10" =>
+                PC_mux <= x"6C"; 
+            when "11" =>
+                PC_mux <= x"78"; 
+            when others =>
+                PC_mux <= x"00"; 
+        end case;
+end process;
+
 end behavior;
