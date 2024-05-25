@@ -8,9 +8,9 @@ entity registrosPG is
            enable     : in  STD_LOGIC;
            data_in    : in  STD_LOGIC_VECTOR (23 downto 0);
            selector1  : in  STD_LOGIC_VECTOR (1 downto 0); -- Selector para la primera salida
-           selector2  : in  STD_LOGIC_VECTOR (1 downto 0); -- Selector para la segunda salida
-           data_out1  : out STD_LOGIC_VECTOR (23 downto 0); -- Primera salida de datos
-           data_out2  : out STD_LOGIC_VECTOR (23 downto 0)); -- Segunda salida de datos
+           --selector2  : in  STD_LOGIC_VECTOR (1 downto 0); -- Selector para la segunda salida
+           data_out1  : out STD_LOGIC_VECTOR (23 downto 0)); -- Primera salida de datos
+           --data_out2  : out STD_LOGIC_VECTOR (23 downto 0)); -- Segunda salida de datos
 end registrosPG;
 
 architecture Behavioral of registrosPG is
@@ -43,6 +43,6 @@ begin
 
     -- Asignación de data_out1 y data_out2 basada en selector1 y selector2
     data_out1 <= registros(TO_INTEGER(unsigned(selector1)));
-    data_out2 <= registros(TO_INTEGER(unsigned(selector2)));
+    --data_out2 <= registros(TO_INTEGER(unsigned(selector2)));
 
 end Behavioral;

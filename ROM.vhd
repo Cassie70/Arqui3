@@ -180,7 +180,7 @@ architecture a_ROM of ROM is
 		98 => OP_MULT&RA&RB&RA&x"000",--MULT RA,RB,RA
 		99 => OP_MULTI&RA&x"000A", --MULTI RA,10
 		100=> OP_LOAD&RB&x"00F8", --LOAD X,RB
-		101=> OP_MULTI&RB&x"0020",--MULTI RB,30
+		101=> OP_MULTI&RB&x"001E",--MULTI RB,30
 		102=> OP_LOAD&RC&x"00FA", --LOAD Z,RC
 		103=> OP_DIVI&RC&x"0002", --DIVI RC,2
 		104=> OP_ADD&RA&RB&RA&x"000",--ADD RA,RB,RA
@@ -237,4 +237,3 @@ begin
 		end if;
 	end process;
 end a_ROM;
-					

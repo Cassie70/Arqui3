@@ -42,9 +42,7 @@ architecture behavior of alu_fetch is
 		enable     : in  STD_LOGIC;
 		data_in    : in  STD_LOGIC_VECTOR (23 downto 0);
 		selector1  : in  STD_LOGIC_VECTOR (1 downto 0); 
-		selector2  : in  STD_LOGIC_VECTOR (1 downto 0);
-		data_out1  : out STD_LOGIC_VECTOR (23 downto 0);
-		data_out2  : out STD_LOGIC_VECTOR (23 downto 0)); 
+		data_out1  : out STD_LOGIC_VECTOR (23 downto 0));
 	end component;
 
 	
@@ -92,8 +90,8 @@ signal data_bus: std_logic_vector(23 downto 0);
 signal rpg_in: std_logic_vector(23 downto 0):=(others=>'0');
 signal rpg_out1: std_logic_vector(23 downto 0);
 signal rpg_sel1: std_logic_vector(1 downto 0):=(others=>'0');
-signal rpg_out2: std_logic_vector(23 downto 0);
-signal rpg_sel2: std_logic_vector(1 downto 0):=(others=>'0');
+--signal rpg_out2: std_logic_vector(23 downto 0);
+--signal rpg_sel2: std_logic_vector(1 downto 0):=(others=>'0');
 signal rpg_write: std_logic:='0';
 signal A,B: std_logic_vector(15 downto 0);
 signal control: std_logic_vector(3 downto 0);
@@ -107,7 +105,7 @@ i_halt,i_add,i_sub,i_mult,i_div,i_multi,i_divi,i_comp1,i_comp2,i_jmp,i_loadi,i_c
 
 signal instruction: instruction_type;
 
-type execute_instruction_type is(t0,t1,t2,t3,t4);
+type execute_instruction_type is(t0,t1,t2,t3,t4,t5);
 signal execute_instruction: execute_instruction_type;
 
 
@@ -123,7 +121,7 @@ centenas: bcdDisplay port map(clk_0,reset,Qbcd(11 downto 8),ce);
 millar: bcdDisplay port map(clk_0,reset,Qbcd(15 downto 12),mi);
 --clk_1
 ROM_imp: ROM port map(clk_1,reset,'1','1',MAR,data_bus);
-RPG : registrosPG port map(clk_1,reset,rpg_write,rpg_in,rpg_sel1,rpg_sel2,rpg_out1,rpg_out2);
+RPG : registrosPG port map(clk_1,reset,rpg_write,rpg_in,rpg_sel1,rpg_out1);
 ALU_imp : alu port map(clk_1,reset_div,A,B,control,ACC(15 downto 0),C,Z,S,V,end_div);
 
 process(clk_1, reset, stop_run)
@@ -214,6 +212,9 @@ process(clk_1, reset, stop_run)
 									rpg_write<='0';
 									execute_instruction<=t0;
 									global_state<=end_execute;
+								when others =>
+									execute_instruction<=t0;
+									global_state<=end_execute;
 							end case;
 							
 						when i_loadi =>
@@ -258,6 +259,9 @@ process(clk_1, reset, stop_run)
 									rpg_write<='0';
 									execute_instruction<=t0;
 									global_state<=end_execute;
+								when others =>
+									execute_instruction<=t0;
+									global_state<=end_execute;
 							end case;
 						when i_multi => 
 							case execute_instruction is 
@@ -279,6 +283,9 @@ process(clk_1, reset, stop_run)
 									rpg_write <= '0';
 									execute_instruction <= t0;
 									global_state <= end_execute;
+								when others =>
+									execute_instruction<=t0;
+									global_state<=end_execute;									
 							end case;
 						when i_divi => 
 							case execute_instruction is 
@@ -306,80 +313,94 @@ process(clk_1, reset, stop_run)
 									rpg_write <= '0';
 									execute_instruction <= t0;
 									global_state <= end_execute;
+								when others =>
+									execute_instruction<=t0;
+									global_state<=end_execute;
 							end case;
+
 						when i_add =>
 							case execute_instruction is
-								when t0 => 
+								when t0 =>
+									control <= "0110";
+									rpg_sel1 <= IR(17 downto 16);
 									execute_instruction <= t1;
 								when t1 =>
-									rpg_sel1 <= IR(17 downto 16);
-									rpg_sel2 <= IR(15 downto 14);
+									A<=rpg_out1(15 downto 0);
 									execute_instruction <= t2;
 								when t2 =>
-									rpg_sel1 <= IR(13 downto 12);
-									control  <= "0110";
-									A<=rpg_out1(15 downto 0);
-									B<=rpg_out2(15 downto 0);
+									rpg_sel1 <= IR(15 downto 14);
 									execute_instruction <= t3;
 								when t3 =>
-									rpg_write<='1';
+									B<=rpg_out1(15 downto 0);
+									rpg_sel1 <= IR(13 downto 12);
+									execute_instruction <= t4;
+									rpg_write <= '1';
+								when t4 =>
 									if(C = '1') then
 										rpg_in<="0000000"&C&ACC;
 									else
 										rpg_in<="00000000"&ACC;
 									end if;
-									execute_instruction <= t4;
-								when t4 =>
+									execute_instruction <= t5;
+								when t5 =>
 									rpg_write <= '0';
 									execute_instruction <= t0;
-									global_state <= end_execute;	
+									global_state <= end_execute;
 							end case;
 						when i_sub =>
 							case execute_instruction is
-								when t0 => 
+								when t0 =>
+									control <= "0111";
+									rpg_sel1 <= IR(17 downto 16);
 									execute_instruction <= t1;
 								when t1 =>
-									rpg_sel1 <= IR(17 downto 16);
-									rpg_sel2 <= IR(15 downto 14);
+									A<=rpg_out1(15 downto 0);
 									execute_instruction <= t2;
 								when t2 =>
-									rpg_sel1 <= IR(13 downto 12);
-									control  <= "0111";
-									A<=rpg_out1(15 downto 0);
-									B<=rpg_out2(15 downto 0);
+									rpg_sel1 <= IR(15 downto 14);
 									execute_instruction <= t3;
 								when t3 =>
-									rpg_write<='1';
+									B<=rpg_out1(15 downto 0);
+									rpg_sel1 <= IR(13 downto 12);
+									execute_instruction <= t4;
+									rpg_write <= '1';
+								when t4 =>
 									if(C = '1') then
 										rpg_in<="0000000"&C&ACC;
 									else
 										rpg_in<="00000000"&ACC;
 									end if;
-									execute_instruction <= t4;
-								when t4 =>
+									execute_instruction <= t5;
+								when t5 =>
 									rpg_write <= '0';
 									execute_instruction <= t0;
-									global_state <= end_execute;	
+									global_state <= end_execute;
 							end case;
 						when i_mult =>
 							case execute_instruction is
-								when t0 => 
+								when t0 =>
+									control <= "1101";
+									rpg_sel1 <= IR(17 downto 16);
 									execute_instruction <= t1;
 								when t1 =>
-									rpg_sel1 <= IR(17 downto 16);
-									rpg_sel2 <=IR(15 downto 14);
+									A<=rpg_out1(15 downto 0);
 									execute_instruction <= t2;
 								when t2 =>
-									rpg_sel1 <= IR(13 downto 12);
-									control <= "1101";
-									A<=rpg_out1(15 downto 0); 
-									B<=rpg_out2(15 downto 0);
+									rpg_sel1 <= IR(15 downto 14);
 									execute_instruction <= t3;
 								when t3 =>
-									rpg_write<='1';
-									rpg_in<="00000000"&ACC;
+									B<=rpg_out1(15 downto 0);
+									rpg_sel1 <= IR(13 downto 12);
 									execute_instruction <= t4;
+									rpg_write <= '1';
 								when t4 =>
+									if(C = '1') then
+										rpg_in<="0000000"&C&ACC;
+									else
+										rpg_in<="00000000"&ACC;
+									end if;
+									execute_instruction <= t5;
+								when t5 =>
 									rpg_write <= '0';
 									execute_instruction <= t0;
 									global_state <= end_execute;
@@ -410,6 +431,9 @@ process(clk_1, reset, stop_run)
 									end if;
 									execute_instruction<=t0;
 									global_state<=end_execute;
+								when others =>
+									execute_instruction<=t0;
+									global_state<=end_execute;
 							end case;
 						
 						when i_adec =>
@@ -435,8 +459,11 @@ process(clk_1, reset, stop_run)
 									rpg_write<='0';
 									execute_instruction<=t0;
 									global_state<=end_execute;
+								when others =>
+									execute_instruction<=t0;
+									global_state<=end_execute;	
 							end case;
-						
+					
 						when i_bnz =>
 							if(Z = '0') then
 								if(IR(17)='0') then
@@ -495,18 +522,20 @@ process(clk_1, reset, stop_run)
 
 						when i_cmp =>
 							case execute_instruction is
-								when t0 => 
+								when t0 =>
+									control <= "0111";
+									rpg_sel1 <= IR(17 downto 16);
 									execute_instruction <= t1;
 								when t1 =>
-									rpg_sel1 <= IR(17 downto 16);
-									rpg_sel2 <= IR(15 downto 14);
+									A<=rpg_out1(15 downto 0);
 									execute_instruction <= t2;
 								when t2 =>
-									control  <= "0111";
-									A<=rpg_out1(15 downto 0);
-									B<=rpg_out2(15 downto 0);
+									rpg_sel1 <= IR(15 downto 14);
 									execute_instruction <= t3;
 								when t3 =>
+									B<=rpg_out1(15 downto 0);
+									execute_instruction <= t4;
+								when t4 =>
 									execute_instruction <= t0;
 									global_state <= end_execute;
 								when others =>

@@ -91,12 +91,12 @@ begin
 				B_temp<=one;
 				substract<='1';
 				en_div <= '0';
-			when "0110"=>--A+B 12 BITS
+			when "0110"=>--A+B 16 BITS
 				A_temp<=A;
 				B_temp<=B;
 				substract<='0';
 				en_div <= '0';
-			when "0111"=>--A-B 12 BITS
+			when "0111"=>--A-B 16 BITS
 				A_temp<=A;
 				B_temp<=B;
 				substract<='1';
